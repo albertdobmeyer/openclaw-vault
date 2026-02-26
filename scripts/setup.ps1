@@ -85,11 +85,12 @@ else {
     $OpenAIPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
         [Runtime.InteropServices.Marshal]::SecureStringToBSTR($OpenAIKey))
 
-    @"
-# OpenClaw-Vault API keys - NEVER committed to git
-ANTHROPIC_API_KEY=$AnthropicPlain
-OPENAI_API_KEY=$OpenAIPlain
-"@ | Set-Content $EnvFile -Encoding UTF8
+    # Write keys line-by-line (avoid here-string interpolation issues)
+    @(
+        "# OpenClaw-Vault API keys - NEVER committed to git",
+        "ANTHROPIC_API_KEY=$AnthropicPlain",
+        "OPENAI_API_KEY=$OpenAIPlain"
+    ) | Set-Content $EnvFile -Encoding UTF8
 
     Write-Host "[+] API keys saved to $EnvFile"
 }

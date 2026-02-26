@@ -197,20 +197,23 @@ class VaultProxy:
                 )
                 return
 
-            # --- 2. Redact API keys if reflected in response (body + headers) ---
+            # --- 2. Redact API keys if reflected in response (headers + body) ---
             for env_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
                 key = os.environ.get(env_var, "")
                 if not key:
                     continue
                 key_bytes = key.encode()
                 redacted = False
-                # Scan response headers
-                for header_name in list(flow.response.headers.keys()):
-                    if key in flow.response.headers[header_name]:
-                        flow.response.headers[header_name] = flow.response.headers[header_name].replace(
-                            key, "[REDACTED_BY_VAULT]"
-                        )
+                # Scan ALL response headers (handles duplicate header names)
+                # headers.fields is a tuple of (name, value) byte pairs
+                new_fields = []
+                for hname, hval in flow.response.headers.fields:
+                    if key_bytes in hval:
+                        hval = hval.replace(key_bytes, b"[REDACTED_BY_VAULT]")
                         redacted = True
+                    new_fields.append((hname, hval))
+                if redacted:
+                    flow.response.headers.fields = tuple(new_fields)
                 # Scan response body
                 if flow.response.content and key_bytes in flow.response.content:
                     flow.response.content = flow.response.content.replace(
