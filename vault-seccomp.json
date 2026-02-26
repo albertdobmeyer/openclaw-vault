@@ -77,14 +77,6 @@
       ]
     },
     {
-      "_comment": "prctl: allow PR_SET_KEEPCAPS (8) — needed by Node.js",
-      "names": ["prctl"],
-      "action": "SCMP_ACT_ALLOW",
-      "args": [
-        { "index": 0, "value": 8, "op": "SCMP_CMP_EQ" }
-      ]
-    },
-    {
       "_comment": "Explicitly blocked — dangerous for sandbox escape",
       "names": [
         "mount", "umount2", "pivot_root",

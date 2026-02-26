@@ -180,11 +180,24 @@ class VaultProxy:
         })
 
     def response(self, flow: http.HTTPFlow):
-        """Log response metadata, redact reflected API keys, block oversized responses."""
+        """Block oversized responses, redact reflected API keys, log metadata."""
         if flow.response:
             response_size = len(flow.response.content) if flow.response.content else 0
 
-            # Redact API keys if reflected in response
+            # --- 1. Block oversized responses FIRST (before logging misleading 200) ---
+            if response_size > EXFIL_RESPONSE_THRESHOLD_BYTES:
+                self._log_event({
+                    "action": "LARGE_RESPONSE_BLOCKED",
+                    "url": flow.request.pretty_url,
+                    "response_bytes": response_size,
+                    "reason": "response exceeds 10 MB threshold",
+                })
+                flow.response = http.Response.make(
+                    413, b"Response too large", {"Content-Type": "text/plain"}
+                )
+                return
+
+            # --- 2. Redact API keys if reflected in response ---
             if flow.response.content:
                 for env_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
                     key = os.environ.get(env_var, "")
@@ -199,23 +212,13 @@ class VaultProxy:
                             "reason": "API key found in response body — redacted",
                         })
 
+            # --- 3. Log response metadata ---
             self._log_event({
                 "action": "RESPONSE",
                 "url": flow.request.pretty_url,
                 "status": flow.response.status_code,
                 "response_bytes": response_size,
             })
-
-            if response_size > EXFIL_RESPONSE_THRESHOLD_BYTES:
-                self._log_event({
-                    "action": "LARGE_RESPONSE_BLOCKED",
-                    "url": flow.request.pretty_url,
-                    "response_bytes": response_size,
-                    "reason": "response exceeds 10 MB threshold",
-                })
-                flow.response = http.Response.make(
-                    413, b"Response too large", {"Content-Type": "text/plain"}
-                )
 
 
 addons = [VaultProxy()]

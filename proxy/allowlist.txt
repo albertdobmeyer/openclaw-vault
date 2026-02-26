@@ -29,4 +29,7 @@ api.openai.com
 # --- Code hosting (for skill source review) ---
 # github.com              # Commented: broad — includes api.github.com (exfil risk via Gists API)
                            # Uncomment only if you need to fetch repo tarballs from github.com
+# raw.githubusercontent.com: allows fetching public file content from GitHub.
+# Read-only (no push), but a compromised agent could encode data into the URL
+# path (e.g., /user/repo/main/<base64>) — the request 404s but GitHub logs it.
 raw.githubusercontent.com

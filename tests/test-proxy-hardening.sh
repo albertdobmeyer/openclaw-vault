@@ -46,10 +46,12 @@ else
 fi
 
 # Test 4: API keys are configured (not empty, not placeholder)
+# Note: avoid capturing the raw key value into a shell variable
 echo -n "  API keys configured (not placeholder): "
-inspect_env=$($RUNTIME inspect "$PROXY_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || echo "")
-if echo "$inspect_env" | grep -qE 'ANTHROPIC_API_KEY=.+' && \
-   ! echo "$inspect_env" | grep -q "REPLACE-WITH-YOUR-KEY"; then
+if $RUNTIME inspect "$PROXY_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+   | grep -qE 'ANTHROPIC_API_KEY=.+' \
+   && ! $RUNTIME inspect "$PROXY_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+   | grep -q "REPLACE-WITH-YOUR-KEY"; then
     echo "PASS (real keys configured)"
 else
     echo "FAIL — API keys missing or placeholder values"

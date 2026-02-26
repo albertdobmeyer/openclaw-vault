@@ -63,12 +63,13 @@ echo "Running 15-point security check..."
 echo ""
 
 # 1. Network: can reach allowed domain (via proxy)
+# Note: wget was removed from the image; use node's http module instead
 check 1 "Network: proxy reachable" \
-    "wget -q -O /dev/null --timeout=10 http://vault-proxy:8080 || true"
+    "node -e \"require('http').get('http://vault-proxy:8080',r=>{process.exit(0)}).on('error',()=>process.exit(1))\""
 
 # 2. Network: blocked domain returns 403 (confirm proxy allowlist, not just network failure)
 check 2 "Network: evil.com blocked by proxy (403)" \
-    "wget -S --timeout=5 http://evil.com 2>&1 | grep -q '403'" false
+    "node -e \"const h=require('http');h.get('http://evil.com',{timeout:5000},r=>{process.exit(r.statusCode===403?0:1)}).on('error',()=>process.exit(1))\"" false
 
 # 3. Filesystem: root is read-only
 check 3 "Filesystem: root is read-only" \

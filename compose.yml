@@ -16,9 +16,9 @@ services:
     container_name: openclaw-vault
     read_only: true
     tmpfs:
-      - /tmp:size=256m,noexec,nosuid
-      - /home/vault/.config:size=64m,noexec,nosuid
-      - /home/vault/workspace:size=1g,noexec,nosuid
+      - /tmp:size=256m,noexec,nosuid,mode=1777
+      - /home/vault/.config:size=64m,noexec,nosuid,uid=1000,gid=1000
+      - /home/vault/workspace:size=1g,noexec,nosuid,uid=1000,gid=1000
     security_opt:
       - no-new-privileges:true
       - seccomp=vault-seccomp.json
