@@ -4,6 +4,11 @@
 #
 # The vault-proxy BLOCKS all traffic to domains not listed here.
 # Add domains only if you understand why OpenClaw needs them.
+#
+# IMPORTANT: Subdomain matching means every subdomain of a listed domain is
+# implicitly allowed. For example, listing "github.com" also allows
+# "api.github.com" — which can be used to exfiltrate data via the Gists API.
+# Only list the most specific domain you actually need.
 
 # --- LLM API providers ---
 api.anthropic.com
@@ -13,7 +18,7 @@ api.openai.com
 # WARNING: npm install runs arbitrary lifecycle scripts. Packages can execute
 # code at install time, and Node.js require() bypasses noexec mount flags.
 # Only install packages you have reviewed. See README "Known residual risks".
-registry.npmjs.org
+# registry.npmjs.org     # Uncomment if you need npm install (runs arbitrary code — review packages first)
 
 # --- OpenClaw skill registry ---
 # WARNING: 11.9% of ClawHub skills were found to be malicious (ClawHavoc).
@@ -22,5 +27,6 @@ registry.npmjs.org
 # www.clawhub.ai
 
 # --- Code hosting (for skill source review) ---
-github.com
+# github.com              # Commented: broad — includes api.github.com (exfil risk via Gists API)
+                           # Uncomment only if you need to fetch repo tarballs from github.com
 raw.githubusercontent.com

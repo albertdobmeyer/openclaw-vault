@@ -13,6 +13,27 @@ $VaultDir = Split-Path -Parent $PSScriptRoot
 # Detect runtime
 $Runtime = if (Get-Command podman -ErrorAction SilentlyContinue) { "podman" } else { "docker" }
 
+function Invoke-HardKill {
+    Write-Host "[HARD KILL] Force removing all vault resources..." -ForegroundColor Red
+    Push-Location $VaultDir
+    & $Runtime compose kill 2>$null
+    & $Runtime compose down --volumes --remove-orphans 2>$null
+    Pop-Location
+
+    # Docker sandbox cleanup
+    if ($Runtime -eq "docker") {
+        & docker sandbox rm openclaw-vault 2>$null
+    }
+
+    & $Runtime rmi openclaw-vault 2>$null
+
+    # Remove vault-specific resources only (not global prune)
+    & $Runtime volume rm openclaw-vault_vault-proxy-logs 2>$null
+    & $Runtime volume rm openclaw-vault_proxy-ca 2>$null
+
+    Write-Host "[+] All vault containers, volumes, networks, and images removed." -ForegroundColor Green
+}
+
 switch ($Mode) {
     "soft" {
         Write-Host "[SOFT KILL] Graceful shutdown..." -ForegroundColor Yellow
@@ -25,22 +46,7 @@ switch ($Mode) {
     }
 
     "hard" {
-        Write-Host "[HARD KILL] Force removing all vault resources..." -ForegroundColor Red
-        Push-Location $VaultDir
-        & $Runtime compose kill 2>$null
-        & $Runtime compose down --volumes --remove-orphans 2>$null
-        Pop-Location
-
-        # Docker sandbox cleanup
-        if ($Runtime -eq "docker") {
-            & docker sandbox rm openclaw-vault 2>$null
-        }
-
-        & $Runtime rmi openclaw-vault 2>$null
-        & $Runtime network prune -f 2>$null
-        & $Runtime volume prune -f 2>$null
-
-        Write-Host "[+] All vault containers, volumes, networks, and images removed." -ForegroundColor Green
+        Invoke-HardKill
     }
 
     "nuclear" {
@@ -62,7 +68,7 @@ switch ($Mode) {
         }
 
         # Also hard kill containers
-        & $PSCommandPath -Mode hard
+        Invoke-HardKill
 
         Write-Host ""
         Write-Host "[+] NUCLEAR KILL complete. All vault infrastructure destroyed." -ForegroundColor Green

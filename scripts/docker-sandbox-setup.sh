@@ -29,8 +29,15 @@ fi
 
 # --- Load or prompt for API key ---
 if [ -f "$ENV_FILE" ]; then
+    # Validate .env contains only comments, blank lines, and KEY=VALUE pairs
+    if grep -vqE '^[A-Za-z_][A-Za-z0-9_]*=|^#|^\s*$' "$ENV_FILE"; then
+        echo "[!] ERROR: .env contains unexpected content. Refusing to source."
+        exit 1
+    fi
     # shellcheck source=/dev/null
+    set -a
     source "$ENV_FILE"
+    set +a
 else
     echo "Enter your Anthropic API key (required):"
     read -rsp "  ANTHROPIC_API_KEY: " ANTHROPIC_API_KEY
@@ -63,7 +70,7 @@ echo "[*] Configuring network proxy (deny-by-default)..."
 docker sandbox network proxy "$SANDBOX_NAME" --policy deny
 
 # Allow only LLM APIs and package registry
-for domain in api.anthropic.com api.openai.com registry.npmjs.org github.com raw.githubusercontent.com; do
+for domain in api.anthropic.com api.openai.com raw.githubusercontent.com; do
     docker sandbox network proxy "$SANDBOX_NAME" --allow-host "$domain"
     echo "    Allowed: $domain"
 done

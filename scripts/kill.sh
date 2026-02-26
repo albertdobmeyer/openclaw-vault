@@ -27,6 +27,27 @@ usage() {
     exit 1
 }
 
+do_hard_kill() {
+    echo "[HARD KILL] Force removing all vault resources..."
+    cd "$VAULT_DIR"
+    $COMPOSE kill 2>/dev/null || true
+    $COMPOSE down --volumes --remove-orphans 2>/dev/null || true
+
+    # Also clean up Docker sandbox if it exists
+    if command -v docker &>/dev/null; then
+        docker sandbox rm openclaw-vault 2>/dev/null || true
+    fi
+
+    # Remove the image
+    $RUNTIME rmi openclaw-vault 2>/dev/null || true
+
+    # Remove vault-specific resources only (not global prune)
+    $RUNTIME volume rm openclaw-vault_vault-proxy-logs 2>/dev/null || true
+    $RUNTIME volume rm openclaw-vault_proxy-ca 2>/dev/null || true
+
+    echo "[+] All vault containers, volumes, networks, and images removed."
+}
+
 [ $# -lt 1 ] && usage
 
 case "$1" in
@@ -41,24 +62,7 @@ case "$1" in
         ;;
 
     --hard)
-        echo "[HARD KILL] Force removing all vault resources..."
-        cd "$VAULT_DIR"
-        $COMPOSE kill 2>/dev/null || true
-        $COMPOSE down --volumes --remove-orphans 2>/dev/null || true
-
-        # Also clean up Docker sandbox if it exists
-        if command -v docker &>/dev/null; then
-            docker sandbox rm openclaw-vault 2>/dev/null || true
-        fi
-
-        # Remove the image
-        $RUNTIME rmi openclaw-vault 2>/dev/null || true
-
-        # Prune dangling resources
-        $RUNTIME network prune -f 2>/dev/null || true
-        $RUNTIME volume prune -f 2>/dev/null || true
-
-        echo "[+] All vault containers, volumes, networks, and images removed."
+        do_hard_kill
         ;;
 
     --nuclear)
@@ -80,7 +84,7 @@ case "$1" in
         fi
 
         # Also do a hard kill of containers
-        "$0" --hard
+        do_hard_kill
 
         echo ""
         echo "[+] NUCLEAR KILL complete. All vault infrastructure destroyed."

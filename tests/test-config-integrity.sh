@@ -36,8 +36,15 @@ check_config "Approval mode = always" "mode" '"always"'
 # Test 3: Persistence is false
 check_config "Persistence disabled" "persistence" "false"
 
-# Test 4: Telemetry is disabled
-check_config "Telemetry disabled" "enabled" "false"
+# Test 4: Telemetry is disabled (section-aware check)
+echo -n "  Telemetry disabled:                          "
+telemetry=$($RUNTIME exec "$CONTAINER" sh -c "grep -A1 'telemetry:' $CONFIG_PATH 2>/dev/null" 2>&1) || true
+if echo "$telemetry" | grep -q "enabled:.*false"; then
+    echo "PASS"
+else
+    echo "FAIL — telemetry may be enabled: $telemetry"
+    exit 1
+fi
 
 # Test 5: Sandbox scope is session
 check_config "Sandbox scope = session" "scope" '"session"'

@@ -61,17 +61,17 @@ else
     read -rsp "  OPENAI_API_KEY: " OPENAI_KEY
     echo ""
 
-    cat > "$ENV_FILE" <<ENVEOF
-# OpenClaw-Vault API keys — NEVER committed to git
-# These are injected by the mitmproxy sidecar, not the OpenClaw container.
-#
-# Best practices:
-#   - Create scoped/restricted API keys for sandbox use only
-#   - Set hard spending limits on your API provider dashboard
-#   - Rotate keys regularly
-ANTHROPIC_API_KEY=${ANTHROPIC_KEY}
-OPENAI_API_KEY=${OPENAI_KEY}
-ENVEOF
+    {
+        echo "# OpenClaw-Vault API keys — NEVER committed to git"
+        echo "# These are injected by the mitmproxy sidecar, not the OpenClaw container."
+        echo "#"
+        echo "# Best practices:"
+        echo "#   - Create scoped/restricted API keys for sandbox use only"
+        echo "#   - Set hard spending limits on your API provider dashboard"
+        echo "#   - Rotate keys regularly"
+        printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_KEY"
+        printf 'OPENAI_API_KEY=%s\n' "$OPENAI_KEY"
+    } > "$ENV_FILE"
     chmod 600 "$ENV_FILE"
     echo "[+] API keys saved to $ENV_FILE (mode 600)"
 fi

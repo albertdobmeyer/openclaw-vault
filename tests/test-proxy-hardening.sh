@@ -45,14 +45,14 @@ else
     echo "PASS"
 fi
 
-# Test 4: No API keys in proxy container environment visible from inspect
-echo -n "  API keys not in inspect output: "
+# Test 4: API keys are configured (not empty, not placeholder)
+echo -n "  API keys configured (not placeholder): "
 inspect_env=$($RUNTIME inspect "$PROXY_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null || echo "")
-# Keys SHOULD be in proxy env (that's by design), but check they aren't default/example values
-if echo "$inspect_env" | grep -q "REPLACE-WITH-YOUR-KEY"; then
-    echo "WARN — proxy has example/placeholder API keys (not real keys)"
+if echo "$inspect_env" | grep -qE 'ANTHROPIC_API_KEY=.+' && \
+   ! echo "$inspect_env" | grep -q "REPLACE-WITH-YOUR-KEY"; then
+    echo "PASS (real keys configured)"
 else
-    echo "PASS (keys are set, not placeholder values)"
+    echo "FAIL — API keys missing or placeholder values"
 fi
 
 # Test 5: Proxy is only accessible on internal network

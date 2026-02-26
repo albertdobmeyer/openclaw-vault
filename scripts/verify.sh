@@ -66,9 +66,9 @@ echo ""
 check 1 "Network: proxy reachable" \
     "wget -q -O /dev/null --timeout=10 http://vault-proxy:8080 || true"
 
-# 2. Network: blocked domain returns 403
-check 2 "Network: evil.com blocked" \
-    "wget -q -O /dev/null --timeout=5 http://evil.com" true
+# 2. Network: blocked domain returns 403 (confirm proxy allowlist, not just network failure)
+check 2 "Network: evil.com blocked by proxy (403)" \
+    "wget -S --timeout=5 http://evil.com 2>&1 | grep -q '403'" false
 
 # 3. Filesystem: root is read-only
 check 3 "Filesystem: root is read-only" \
@@ -82,8 +82,8 @@ check 4 "Capabilities: ping blocked (NET_RAW dropped)" \
 check 5 "Host mount: /mnt/c not accessible" \
     "ls /mnt/c/ 2>&1" true
 
-# 6. Interop: cmd.exe not found
-check 6 "Interop: cmd.exe not available" \
+# 6. Interop: no Windows binaries in PATH
+check 6 "Interop: no Windows binaries in PATH" \
     "which cmd.exe 2>&1" true
 
 # 7. API key: not in container environment

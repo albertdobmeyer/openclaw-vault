@@ -32,6 +32,8 @@ services:
     depends_on:
       vault-proxy:
         condition: service_started
+    volumes:
+      - proxy-ca:/opt/proxy-ca:ro
     environment:
       - HTTP_PROXY=http://vault-proxy:8080
       - HTTPS_PROXY=http://vault-proxy:8080
@@ -42,20 +44,22 @@ services:
 
   # --- mitmproxy sidecar (bridges internal ↔ external) ---
   vault-proxy:
-    image: mitmproxy/mitmproxy:latest
+    # mitmproxy 11.1.3 — pinned 2026-02-26
+    image: mitmproxy/mitmproxy@sha256:89735e2280557aa7597db3a96edcddd5055a0e30d9db7dfb1bfe12c450c333f1
     container_name: vault-proxy
     command: >
       mitmdump
         --listen-host 0.0.0.0
         --listen-port 8080
         --set block_global=false
+        --set block_private=true
         --scripts /opt/vault/vault-proxy.py
     read_only: true
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
-      - /home/mitmproxy/.mitmproxy:size=128m,nosuid
     security_opt:
       - no-new-privileges:true
+      - seccomp=vault-proxy-seccomp.json
     cap_drop:
       - ALL
     cap_add:
@@ -66,6 +70,7 @@ services:
       - ./proxy/vault-proxy.py:/opt/vault/vault-proxy.py:ro
       - ./proxy/allowlist.txt:/opt/vault/allowlist.txt:ro
       - vault-proxy-logs:/var/log/vault-proxy
+      - proxy-ca:/home/mitmproxy/.mitmproxy
     networks:
       - vault-internal
       - vault-external
@@ -83,4 +88,6 @@ networks:
 
 volumes:
   vault-proxy-logs:
+    driver: local
+  proxy-ca:
     driver: local

@@ -16,7 +16,7 @@ HOST (your machine)
 │
 ├── Network Proxy (mitmproxy sidecar)
 │     API key injection · domain allowlist · exfiltration alerts
-│     request/response logging (JSON on host)
+│     request/response logging (JSON on host) · custom seccomp
 │
 └── Kill Switch
       --soft (stop, preserve)  --hard (nuke containers)  --nuclear (destroy VM)
@@ -207,7 +207,8 @@ bash scripts/verify.sh
 Edit `proxy/allowlist.txt`. One domain per line. Subdomains included automatically.
 
 ```bash
-podman compose restart vault-proxy   # reload after editing
+podman compose restart vault-proxy   # full restart
+podman exec vault-proxy kill -HUP 1  # hot-reload without restart
 ```
 
 ClawHub registry domains are **commented out by default**. Uncomment only after manually reviewing a specific skill's source code.
@@ -229,20 +230,21 @@ ClawHub registry domains are **commented out by default**. Uncomment only after 
 - Hypervisor escape (state-actor level — not your threat model)
 - WSL2/container kernel zero-days (mitigated in Phase 2: VM isolation)
 - Social engineering (if you approve a malicious action, the sandbox can't help)
-- Compromised base images (mitigate by pinning image digests)
 - Side-channel attacks (Spectre/Meltdown class — not practical here)
 
 ### Known residual risks you must understand
 
 These are not theoretical concerns — they are architectural realities of the OpenClaw-Vault's design. Read them before deploying.
 
-**The proxy sidecar holds the API key.** The mitmproxy container is the one component that has your key. If an attacker compromises the proxy container itself (not the OpenClaw container), they get the key directly. The proxy is hardened with read-only root, dropped capabilities, no-new-privileges, memory/PID limits, and minimal surface — matching the vault container in all respects except the custom seccomp profile, which is not applied to the proxy because mitmproxy requires broader syscall access for TLS interception. You should understand that the key exists somewhere in the stack — just not where OpenClaw can reach it.
+**The proxy sidecar holds the API key.** The mitmproxy container is the one component that has your key. If an attacker compromises the proxy container itself (not the OpenClaw container), they get the key directly. The proxy is hardened with read-only root, dropped capabilities, no-new-privileges, memory/PID limits, a custom seccomp profile (blocking io_uring, ptrace, unshare, setns, bpf, and other escape vectors), and minimal surface — matching the vault container in all respects. The proxy's seccomp profile is broader than the vault's (mitmproxy needs wider syscall access for TLS interception) but still blocks known container-escape vectors. You should understand that the key exists somewhere in the stack — just not where OpenClaw can reach it.
 
 **Allowed domains can be abused during a live session.** The API provider domains (e.g. `api.anthropic.com`) must be on the allowlist for OpenClaw to function. A compromised agent can make arbitrary API calls using the proxy-injected credentials — it can't see the raw key, but it can use it. This means it could rack up charges, generate content, or encode exfiltrated data into API request payloads. **Your mitigation: set a hard spending cap on your API key. This is not optional. Treat the spending cap as part of the security boundary, not as a billing preference.**
 
 **The Telegram control channel is a trust boundary.** If someone compromises your Telegram account, they control the agent and can approve any action. Use a dedicated Telegram account (not your personal one), enable two-factor authentication, and treat those credentials as security-critical. Do not reuse passwords.
 
-**npm install is a supply-chain risk even inside the container.** The domain allowlist permits `registry.npmjs.org` so OpenClaw can install skill dependencies. However, npm packages can execute arbitrary code during install via lifecycle scripts (`preinstall`, `postinstall`), and Node.js `require()` loads and executes JavaScript regardless of noexec mount flags (noexec only blocks ELF binaries, not interpreted code). A malicious npm package can therefore run code inside the container at install time. The container's other restrictions (no network except allowlisted domains, no host mounts, no capabilities) limit the blast radius, but this is a real gap. **Only install npm packages you have reviewed.**
+**Allowlist subdomain matching is implicit.** Every subdomain of an allowed domain is also allowed. For example, allowing `github.com` also allows `api.github.com`, which could be used to exfiltrate data via the Gists API. For this reason, `github.com` is commented out by default — only `raw.githubusercontent.com` is allowed. If you add a domain to the allowlist, consider whether its subdomains create an exfiltration path.
+
+**npm install is a supply-chain risk even inside the container.** The `registry.npmjs.org` domain is commented out by default in the allowlist. If you uncomment it, npm packages can execute arbitrary code during install via lifecycle scripts (`preinstall`, `postinstall`), and Node.js `require()` loads and executes JavaScript regardless of noexec mount flags (noexec only blocks ELF binaries, not interpreted code). A malicious npm package can therefore run code inside the container at install time. The container's other restrictions (no network except allowlisted domains, no host mounts, no capabilities) limit the blast radius, but this is a real gap. **Only install npm packages you have reviewed.**
 
 **Container kill does not guarantee complete cleanup.** When you run `kill.sh --hard`, containers, volumes, and networks are destroyed. The agent's session workspace is gone. But the container runtime (Docker/Podman) stores layer caches, image metadata, and runtime logs on the host that survive container destruction. These do not contain your API key (proxy-side injection ensures that), but they may contain conversation logs or agent activity metadata. For thorough cleanup after you're done with the OpenClaw-Vault entirely, also remove the cloned repo directory and prune your container runtime: `podman system prune -a` or `docker system prune -a`.
 
@@ -254,7 +256,8 @@ These are not theoretical concerns — they are architectural realities of the O
 openclaw-vault/
 ├── Containerfile                # Hardened image (multi-stage, stripped)
 ├── compose.yml                  # Container + proxy orchestration
-├── vault-seccomp.json           # Custom syscall filter
+├── vault-seccomp.json           # Custom syscall filter (vault)
+├── vault-proxy-seccomp.json     # Custom syscall filter (proxy)
 ├── proxy/
 │   ├── vault-proxy.py           # Key injection + allowlist + logging
 │   └── allowlist.txt            # Editable domain allowlist
@@ -264,7 +267,8 @@ openclaw-vault/
 │   ├── setup.sh / setup.ps1     # One-command setup
 │   ├── kill.sh / kill.ps1       # Three-level kill switch
 │   ├── verify.sh                # 15-point security verification
-│   └── docker-sandbox-setup.sh  # Path B alternative
+│   ├── docker-sandbox-setup.sh  # Path B alternative
+│   └── entrypoint.sh            # CA cert wait + exec wrapper
 ├── phase2-vm-isolation/         # [Planned] WSL2/Hyper-V layer
 ├── monitoring/                  # [Planned] Skill scanner, log parser
 └── tests/                       # Isolation verification tests

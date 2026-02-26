@@ -4,13 +4,15 @@
 # Build:  podman build -t openclaw-vault -f Containerfile .
 # Or:     docker build -t openclaw-vault -f Containerfile .
 
-FROM node:20-alpine AS builder
+# node 20.18.2-alpine — pinned 2026-02-26
+FROM node:20-alpine@sha256:ba8312129a193a1f1a781d93afcf6e641956d6e48e3ddefa9b64cd86790ee64c AS builder
 
-# Install OpenClaw CLI
-RUN npm install -g @anthropic-ai/openclaw@latest
+# Install OpenClaw CLI (pinned to stable release)
+RUN npm install -g @anthropic-ai/openclaw@2026.2.17
 
 # --- Production stage ---
-FROM node:20-alpine
+# node 20.18.2-alpine — pinned 2026-02-26
+FROM node:20-alpine@sha256:ba8312129a193a1f1a781d93afcf6e641956d6e48e3ddefa9b64cd86790ee64c
 
 LABEL maintainer="OpenClaw-Vault" \
       description="Hardened OpenClaw sandbox — rootless, read-only, proxy-gated"
@@ -33,12 +35,16 @@ RUN addgroup -g 1000 -S vault \
 COPY config/openclaw-hardening.yml /home/vault/.config/openclaw/config.yml
 RUN chown -R vault:vault /home/vault
 
+# Entrypoint wrapper — waits for proxy CA cert before starting OpenClaw
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Proxy configuration — all traffic routes through vault-proxy sidecar
 # The container NEVER contacts external services directly
 ENV HTTP_PROXY=http://vault-proxy:8080 \
     HTTPS_PROXY=http://vault-proxy:8080 \
     NO_PROXY=localhost,127.0.0.1 \
-    NODE_TLS_REJECT_UNAUTHORIZED=0 \
+    NODE_EXTRA_CA_CERTS=/opt/proxy-ca/mitmproxy-ca-cert.pem \
     HOME=/home/vault
 
 # Run as non-root
@@ -46,5 +52,6 @@ USER vault
 WORKDIR /home/vault/workspace
 
 # tini handles PID 1 responsibilities (signal forwarding, zombie reaping)
-ENTRYPOINT ["/sbin/tini", "--"]
+# entrypoint.sh waits for proxy CA cert, then execs into the CMD
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["openclaw", "--config", "/home/vault/.config/openclaw/config.yml"]

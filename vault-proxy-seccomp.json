@@ -1,5 +1,5 @@
 {
-  "_comment": "OpenClaw-Vault: Custom seccomp profile — whitelist-augmented default Docker profile with additional syscall blocks for container hardening",
+  "_comment": "OpenClaw-Vault: Seccomp profile for vault-proxy (mitmproxy sidecar). Based on Docker's default profile with dangerous escape vectors explicitly blocked.",
   "defaultAction": "SCMP_ACT_ERRNO",
   "defaultErrnoRet": 1,
   "archMap": [
@@ -8,9 +8,10 @@
   ],
   "syscalls": [
     {
+      "_comment": "Broad allow — mitmproxy needs wider syscall access for TLS interception than the vault container",
       "names": [
         "accept", "accept4", "access", "arch_prctl", "bind", "brk",
-        "capget", "chdir", "chmod", "chown", "clock_getres",
+        "capget", "capset", "chdir", "chmod", "chown", "clock_getres",
         "clock_gettime", "clock_nanosleep", "clone", "clone3", "close",
         "connect", "copy_file_range", "creat", "dup", "dup2", "dup3",
         "epoll_create", "epoll_create1", "epoll_ctl", "epoll_pwait",
@@ -36,7 +37,7 @@
         "mq_unlink", "mremap", "msgctl", "msgget", "msgrcv",
         "msgsnd", "msync", "munlock", "munlockall", "munmap",
         "nanosleep", "newfstatat", "open", "openat", "openat2",
-        "pause", "pipe", "pipe2", "poll", "ppoll",
+        "pause", "pipe", "pipe2", "poll", "ppoll", "prctl",
         "pread64", "preadv", "preadv2", "prlimit64", "pselect6",
         "pwrite64", "pwritev", "pwritev2", "read", "readahead",
         "readlink", "readlinkat", "readv", "recv", "recvfrom",
@@ -51,9 +52,10 @@
         "sched_setscheduler", "sched_yield", "seccomp", "select",
         "semctl", "semget", "semop", "semtimedop", "send",
         "sendfile", "sendmmsg", "sendmsg", "sendto", "set_robust_list",
-        "set_tid_address",
-        "setitimer", "setpgid", "setpriority",
-        "setsid", "setsockopt",
+        "set_tid_address", "setfsgid", "setfsuid", "setgid",
+        "setgroups", "setitimer", "setpgid", "setpriority",
+        "setregid", "setresgid", "setresuid", "setreuid",
+        "setrlimit", "setsid", "setsockopt", "setuid",
         "shmat", "shmctl", "shmdt", "shmget", "shutdown",
         "sigaltstack", "signalfd", "signalfd4", "socket",
         "socketpair", "splice", "stat", "statfs", "statx",
@@ -69,23 +71,7 @@
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "_comment": "prctl: allow PR_SET_NAME (15) only — needed by Node.js for thread naming",
-      "names": ["prctl"],
-      "action": "SCMP_ACT_ALLOW",
-      "args": [
-        { "index": 0, "value": 15, "op": "SCMP_CMP_EQ" }
-      ]
-    },
-    {
-      "_comment": "prctl: allow PR_SET_KEEPCAPS (8) — needed by Node.js",
-      "names": ["prctl"],
-      "action": "SCMP_ACT_ALLOW",
-      "args": [
-        { "index": 0, "value": 8, "op": "SCMP_CMP_EQ" }
-      ]
-    },
-    {
-      "_comment": "Explicitly blocked — dangerous for sandbox escape",
+      "_comment": "Explicitly blocked — dangerous for container escape",
       "names": [
         "mount", "umount2", "pivot_root",
         "reboot", "kexec_load", "kexec_file_load",
@@ -101,11 +87,7 @@
         "unshare", "setns",
         "userfaultfd",
         "bpf", "perf_event_open",
-        "io_uring_enter", "io_uring_register", "io_uring_setup",
-        "prctl",
-        "capset", "setrlimit", "setuid", "setgid",
-        "setreuid", "setregid", "setresuid", "setresgid",
-        "setfsgid", "setfsuid", "setgroups"
+        "io_uring_enter", "io_uring_register", "io_uring_setup"
       ],
       "action": "SCMP_ACT_ERRNO",
       "errnoRet": 1

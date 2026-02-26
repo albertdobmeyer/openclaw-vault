@@ -7,17 +7,22 @@ OpenClaw container.
 
 Key behaviors:
   1. Block requests to domains not on the allowlist → 403
-  2. Inject API keys into LLM provider requests (key never enters OpenClaw container)
-  3. Log all requests/responses as structured JSON for forensic review
-  4. Flag suspiciously large responses (potential data exfiltration)
+  2. Block raw IP addresses (allowlist is domain-only) → 403
+  3. Block large outbound payloads (potential exfiltration) → 413
+  4. Inject API keys into LLM provider requests (key never enters OpenClaw container)
+  5. Redact API keys if reflected in responses
+  6. Log all requests/responses as structured JSON for forensic review
+  7. Block oversized responses (>10 MB)
 
 Usage:
   mitmdump --listen-port 8080 --scripts vault-proxy.py
 """
 
+import ipaddress
 import json
 import logging
 import os
+import signal
 import time
 from pathlib import Path
 
@@ -26,7 +31,7 @@ from mitmproxy import ctx, http
 LOG_DIR = Path("/var/log/vault-proxy")
 ALLOWLIST_PATH = Path("/opt/vault/allowlist.txt")
 EXFIL_THRESHOLD_BYTES = 1 * 1024 * 1024  # 1 MB — block large outbound payloads
-EXFIL_RESPONSE_THRESHOLD_BYTES = 10 * 1024 * 1024  # 10 MB — flag large responses
+EXFIL_RESPONSE_THRESHOLD_BYTES = 10 * 1024 * 1024  # 10 MB — block large responses
 
 
 class VaultProxy:
@@ -35,6 +40,7 @@ class VaultProxy:
         self.logger = self._setup_logger()
         self._load_allowlist()
         self.logger.info("VaultProxy initialized with %d allowed domains", len(self.allowlist))
+        signal.signal(signal.SIGHUP, lambda s, f: self._reload_allowlist())
 
     def _setup_logger(self) -> logging.Logger:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -64,9 +70,22 @@ class VaultProxy:
                 if domain and not domain.startswith("#"):
                     self.allowlist.add(domain.lower())
 
+    def _reload_allowlist(self):
+        """Reload allowlist from disk (triggered by SIGHUP)."""
+        old_count = len(self.allowlist)
+        self.allowlist.clear()
+        self._load_allowlist()
+        self.logger.info("Allowlist reloaded: %d → %d domains", old_count, len(self.allowlist))
+
     def _is_allowed(self, host: str) -> bool:
         """Check if host matches any allowed domain (exact or subdomain)."""
         host = host.lower()
+        # Reject raw IP addresses — allowlist is domain-only
+        try:
+            ipaddress.ip_address(host)
+            return False
+        except ValueError:
+            pass
         for allowed in self.allowlist:
             if host == allowed or host.endswith("." + allowed):
                 return True
@@ -78,12 +97,12 @@ class VaultProxy:
         self.logger.info(json.dumps(event, default=str))
 
     def request(self, flow: http.HTTPFlow):
-        """Intercept outbound requests: allowlist check + API key injection."""
+        """Intercept outbound requests: allowlist check, size check, API key injection."""
         host = flow.request.pretty_host
         method = flow.request.method
         url = flow.request.pretty_url
 
-        # --- Domain allowlist enforcement ---
+        # --- 1. Domain allowlist enforcement ---
         if not self._is_allowed(host):
             self._log_event({
                 "action": "BLOCKED",
@@ -103,26 +122,8 @@ class VaultProxy:
             )
             return
 
-        # --- API key injection (the headline feature) ---
-        # Keys come from environment variables in the PROXY container only.
-        # The OpenClaw container never sees these values.
-
-        if host == "api.anthropic.com" or host.endswith(".api.anthropic.com"):
-            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-            if api_key:
-                flow.request.headers["x-api-key"] = api_key
-                flow.request.headers["anthropic-version"] = "2023-06-01"
-            else:
-                ctx.log.warn("ANTHROPIC_API_KEY not set — request will fail auth")
-
-        elif host == "api.openai.com" or host.endswith(".api.openai.com"):
-            api_key = os.environ.get("OPENAI_API_KEY", "")
-            if api_key:
-                flow.request.headers["Authorization"] = f"Bearer {api_key}"
-            else:
-                ctx.log.warn("OPENAI_API_KEY not set — request will fail auth")
-
-        # --- Block large outbound payloads (potential exfiltration) ---
+        # --- 2. Block large outbound payloads (potential exfiltration) ---
+        # MUST happen BEFORE API key injection so keys are never attached to blocked requests
         request_size = len(flow.request.content) if flow.request.content else 0
         if request_size > EXFIL_THRESHOLD_BYTES:
             self._log_event({
@@ -143,6 +144,25 @@ class VaultProxy:
             )
             return
 
+        # --- 3. API key injection (the headline feature) ---
+        # Keys come from environment variables in the PROXY container only.
+        # The OpenClaw container never sees these values.
+
+        if host == "api.anthropic.com" or host.endswith(".api.anthropic.com"):
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if api_key:
+                flow.request.headers["x-api-key"] = api_key
+                flow.request.headers["anthropic-version"] = "2023-06-01"
+            else:
+                ctx.log.warn("ANTHROPIC_API_KEY not set — request will fail auth")
+
+        elif host == "api.openai.com" or host.endswith(".api.openai.com"):
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            if api_key:
+                flow.request.headers["Authorization"] = f"Bearer {api_key}"
+            else:
+                ctx.log.warn("OPENAI_API_KEY not set — request will fail auth")
+
         self._log_event({
             "action": "ALLOWED",
             "method": method,
@@ -152,9 +172,25 @@ class VaultProxy:
         })
 
     def response(self, flow: http.HTTPFlow):
-        """Log response metadata for forensic review."""
+        """Log response metadata, redact reflected API keys, block oversized responses."""
         if flow.response:
             response_size = len(flow.response.content) if flow.response.content else 0
+
+            # Redact API keys if reflected in response
+            if flow.response.content:
+                for env_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+                    key = os.environ.get(env_var, "")
+                    if key and key.encode() in flow.response.content:
+                        flow.response.content = flow.response.content.replace(
+                            key.encode(), b"[REDACTED_BY_VAULT]"
+                        )
+                        self._log_event({
+                            "action": "KEY_REFLECTED",
+                            "url": flow.request.pretty_url,
+                            "env_var": env_var,
+                            "reason": "API key found in response body — redacted",
+                        })
+
             self._log_event({
                 "action": "RESPONSE",
                 "url": flow.request.pretty_url,
@@ -164,11 +200,14 @@ class VaultProxy:
 
             if response_size > EXFIL_RESPONSE_THRESHOLD_BYTES:
                 self._log_event({
-                    "action": "LARGE_RESPONSE",
+                    "action": "LARGE_RESPONSE_BLOCKED",
                     "url": flow.request.pretty_url,
                     "response_bytes": response_size,
-                    "reason": "unusually large response — review for data exfiltration",
+                    "reason": "response exceeds 10 MB threshold",
                 })
+                flow.response = http.Response.make(
+                    413, b"Response too large", {"Content-Type": "text/plain"}
+                )
 
 
 addons = [VaultProxy()]
