@@ -270,7 +270,7 @@ openclaw-vault/
 │   ├── docker-sandbox-setup.sh  # Path B alternative
 │   └── entrypoint.sh            # CA cert wait + exec wrapper
 ├── phase2-vm-isolation/         # [Planned] WSL2/Hyper-V layer
-├── monitoring/                  # [Planned] Skill scanner, log parser
+├── monitoring/                  # Skill scanner, network log parser, session report
 └── tests/                       # Isolation verification tests
 ```
 

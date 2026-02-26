@@ -71,18 +71,26 @@ class VaultProxy:
                     self.allowlist.add(domain.lower())
 
     def _reload_allowlist(self):
-        """Reload allowlist from disk (triggered by SIGHUP)."""
+        """Reload allowlist from disk (triggered by SIGHUP). Atomic swap to avoid empty-set window."""
         old_count = len(self.allowlist)
-        self.allowlist.clear()
-        self._load_allowlist()
+        new_allowlist: set[str] = set()
+        if ALLOWLIST_PATH.exists():
+            with open(ALLOWLIST_PATH) as f:
+                for line in f:
+                    domain = line.strip()
+                    if domain and not domain.startswith("#"):
+                        new_allowlist.add(domain.lower())
+        self.allowlist = new_allowlist
         self.logger.info("Allowlist reloaded: %d → %d domains", old_count, len(self.allowlist))
 
     def _is_allowed(self, host: str) -> bool:
         """Check if host matches any allowed domain (exact or subdomain)."""
         host = host.lower()
         # Reject raw IP addresses — allowlist is domain-only
+        # Strip brackets for IPv6 (mitmproxy returns [::1] form)
+        host_for_ip_check = host.strip("[]")
         try:
-            ipaddress.ip_address(host)
+            ipaddress.ip_address(host_for_ip_check)
             return False
         except ValueError:
             pass

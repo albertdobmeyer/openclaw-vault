@@ -85,7 +85,7 @@ $RUNTIME build -t openclaw-vault -f "$VAULT_DIR/Containerfile" "$VAULT_DIR"
 echo ""
 echo "[*] Starting vault stack..."
 cd "$VAULT_DIR"
-$COMPOSE up -d
+$COMPOSE up -d --no-build
 
 echo ""
 echo "[+] Vault stack is running."

@@ -102,7 +102,6 @@
         "userfaultfd",
         "bpf", "perf_event_open",
         "io_uring_enter", "io_uring_register", "io_uring_setup",
-        "prctl",
         "capset", "setrlimit", "setuid", "setgid",
         "setreuid", "setregid", "setresuid", "setresgid",
         "setfsgid", "setfsuid", "setgroups"

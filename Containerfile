@@ -31,8 +31,9 @@ COPY --from=builder /usr/local/bin/openclaw /usr/local/bin/openclaw
 RUN addgroup -g 1000 -S vault \
     && adduser -u 1000 -S vault -G vault -h /home/vault -s /bin/sh
 
-# Hardened OpenClaw config
-COPY config/openclaw-hardening.yml /home/vault/.config/openclaw/config.yml
+# Hardened OpenClaw config — stored in /opt so tmpfs on ~/.config doesn't shadow it.
+# entrypoint.sh copies it to the tmpfs at startup.
+COPY config/openclaw-hardening.yml /opt/openclaw-hardening.yml
 RUN chown -R vault:vault /home/vault
 
 # Entrypoint wrapper — waits for proxy CA cert before starting OpenClaw
