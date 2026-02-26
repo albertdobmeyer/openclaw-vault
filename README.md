@@ -198,7 +198,7 @@ bash scripts/verify.sh
 | 12 | Noexec on /tmp | Can't execute dropped payloads |
 | 13 | No-new-privileges set | Setuid binaries can't escalate |
 | 14 | PID limit active | Fork bombs contained at 256 |
-| 15 | Config integrity | Approval mode, telemetry, persistence locked |
+| 15 | Config: approval mode | Confirms `mode: always` is set in active config |
 
 ---
 
@@ -272,7 +272,7 @@ openclaw-vault/
 │   ├── docker-sandbox-setup.sh  # Path B alternative
 │   └── entrypoint.sh            # CA cert wait + exec wrapper
 ├── phase2-vm-isolation/         # [Planned] WSL2/Hyper-V layer
-├── monitoring/                  # Skill scanner, network log parser, session report
+├── monitoring/                  # [Stubs] Skill scanner, log parser, session report
 └── tests/                       # Isolation verification tests
 ```
 

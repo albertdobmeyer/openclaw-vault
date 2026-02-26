@@ -29,15 +29,17 @@ fi
 
 # --- Load or prompt for API key ---
 if [ -f "$ENV_FILE" ]; then
-    # Validate .env contains only comments, blank lines, and KEY=VALUE pairs
-    if grep -vqE '^[A-Za-z_][A-Za-z0-9_]*=|^#|^\s*$' "$ENV_FILE"; then
-        echo "[!] ERROR: .env contains unexpected content. Refusing to source."
-        exit 1
-    fi
-    # shellcheck source=/dev/null
-    set -a
-    source "$ENV_FILE"
-    set +a
+    # Parse .env safely without shell evaluation (source is vulnerable to command injection in values)
+    while IFS='=' read -r key value; do
+        # Skip comments and blank lines
+        case "$key" in
+            \#*|"") continue ;;
+        esac
+        # Validate key is a proper identifier
+        if echo "$key" | grep -qE '^[A-Za-z_][A-Za-z0-9_]*$'; then
+            export "$key=$value"
+        fi
+    done < "$ENV_FILE"
 else
     echo "Enter your Anthropic API key (required):"
     read -rsp "  ANTHROPIC_API_KEY: " ANTHROPIC_API_KEY

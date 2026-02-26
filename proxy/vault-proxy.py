@@ -197,20 +197,33 @@ class VaultProxy:
                 )
                 return
 
-            # --- 2. Redact API keys if reflected in response ---
-            if flow.response.content:
-                for env_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
-                    key = os.environ.get(env_var, "")
-                    if key and key.encode() in flow.response.content:
-                        flow.response.content = flow.response.content.replace(
-                            key.encode(), b"[REDACTED_BY_VAULT]"
+            # --- 2. Redact API keys if reflected in response (body + headers) ---
+            for env_var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+                key = os.environ.get(env_var, "")
+                if not key:
+                    continue
+                key_bytes = key.encode()
+                redacted = False
+                # Scan response headers
+                for header_name in list(flow.response.headers.keys()):
+                    if key in flow.response.headers[header_name]:
+                        flow.response.headers[header_name] = flow.response.headers[header_name].replace(
+                            key, "[REDACTED_BY_VAULT]"
                         )
-                        self._log_event({
-                            "action": "KEY_REFLECTED",
-                            "url": flow.request.pretty_url,
-                            "env_var": env_var,
-                            "reason": "API key found in response body — redacted",
-                        })
+                        redacted = True
+                # Scan response body
+                if flow.response.content and key_bytes in flow.response.content:
+                    flow.response.content = flow.response.content.replace(
+                        key_bytes, b"[REDACTED_BY_VAULT]"
+                    )
+                    redacted = True
+                if redacted:
+                    self._log_event({
+                        "action": "KEY_REFLECTED",
+                        "url": flow.request.pretty_url,
+                        "env_var": env_var,
+                        "reason": "API key found in response — redacted",
+                    })
 
             # --- 3. Log response metadata ---
             self._log_event({

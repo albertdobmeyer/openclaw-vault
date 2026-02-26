@@ -102,7 +102,7 @@ Write-Host "[*] Building openclaw-vault container image..."
 Write-Host ""
 Write-Host "[*] Starting vault stack..."
 Push-Location $VaultDir
-& $Runtime compose up -d
+& $Runtime compose up -d --no-build
 Pop-Location
 
 Write-Host ""

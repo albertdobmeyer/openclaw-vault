@@ -68,8 +68,9 @@ check 1 "Network: proxy reachable" \
     "node -e \"require('http').get('http://vault-proxy:8080',r=>{process.exit(0)}).on('error',()=>process.exit(1))\""
 
 # 2. Network: blocked domain returns 403 (confirm proxy allowlist, not just network failure)
+# Node.js http module ignores HTTP_PROXY — send request directly to proxy in proxy-request form
 check 2 "Network: evil.com blocked by proxy (403)" \
-    "node -e \"const h=require('http');h.get('http://evil.com',{timeout:5000},r=>{process.exit(r.statusCode===403?0:1)}).on('error',()=>process.exit(1))\"" false
+    "node -e \"const h=require('http');h.get({host:'vault-proxy',port:8080,path:'http://evil.com/',headers:{Host:'evil.com'}},r=>{process.exit(r.statusCode===403?0:1)}).on('error',()=>process.exit(1))\"" false
 
 # 3. Filesystem: root is read-only
 check 3 "Filesystem: root is read-only" \
