@@ -21,7 +21,7 @@ services:
       - /home/vault/workspace:size=1g,noexec,nosuid,uid=1000,gid=1000
     security_opt:
       - no-new-privileges:true
-      - seccomp=vault-seccomp.json
+      - seccomp=config/vault-seccomp.json
     cap_drop:
       - ALL
     pids_limit: 256
@@ -59,7 +59,7 @@ services:
       - /tmp:size=64m,noexec,nosuid
     security_opt:
       - no-new-privileges:true
-      - seccomp=vault-proxy-seccomp.json
+      - seccomp=config/vault-proxy-seccomp.json
     cap_drop:
       - ALL
     cap_add:

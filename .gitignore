@@ -13,3 +13,32 @@ workspace/
 *.pid
 *.sock
 *.log
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Node artifacts (if ever added)
+node_modules/
+dist/
+build/
+
+# Screenshots / temp images
+*.png
+!docs/*.png

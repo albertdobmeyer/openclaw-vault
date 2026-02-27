@@ -277,14 +277,17 @@ These are not theoretical concerns — they are architectural realities of the O
 openclaw-vault/
 ├── Containerfile                # Hardened image (multi-stage, stripped)
 ├── compose.yml                  # Container + proxy orchestration
-├── definitions.md               # OpenClaw ecosystem terminology reference
-├── vault-seccomp.json           # Custom syscall filter (vault)
-├── vault-proxy-seccomp.json     # Custom syscall filter (proxy)
+├── config/
+│   ├── openclaw-hardening.yml   # Locked-down OpenClaw agent config
+│   ├── vault-seccomp.json       # Custom syscall filter (vault)
+│   └── vault-proxy-seccomp.json # Custom syscall filter (proxy)
+├── docs/
+│   ├── architecture.svg         # Architecture diagram
+│   ├── definitions.md           # OpenClaw ecosystem terminology reference
+│   └── social-preview.png       # GitHub social preview image
 ├── proxy/
 │   ├── vault-proxy.py           # Key injection + allowlist + logging
 │   └── allowlist.txt            # Editable domain allowlist
-├── config/
-│   └── openclaw-hardening.yml   # Locked-down OpenClaw agent config
 ├── scripts/
 │   ├── setup.sh / setup.ps1     # One-command setup
 │   ├── kill.sh / kill.ps1       # Three-level kill switch
