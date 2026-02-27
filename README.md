@@ -4,6 +4,18 @@ You've decided to run [OpenClaw](https://github.com/anthropics/openclaw). This m
 
 **The headline feature:** your API key never enters the container. A proxy sidecar injects it into outbound requests at the network layer. Even with full container compromise, `env | grep API` returns nothing. No other hardening guide does this.
 
+### What is OpenClaw?
+
+Three names, three layers, one ecosystem:
+
+- **OpenClaw** is the agent runtime — an open-source autonomous AI assistant that runs on your machine. It has tools, memory, and can take actions on your behalf. You install it, configure it, and point it at an LLM provider. Formerly called Clawdbot, then briefly Moltbot, then OpenClaw — all within days. Older tutorials use all three names interchangeably.
+- **ClawHub** is the skills registry — a package index where people publish plugins ("skills") that give OpenClaw new capabilities. Think npm for agent actions. During the ClawHavoc incident, 11.9% of published skills turned out to be malware. That's why the vault blocks ClawHub by default.
+- **Moltbook** is the agent social network — a platform where AI agents post, follow, comment, and interact with each other. You don't run Moltbook locally; your OpenClaw agent connects to it via API. Think Twitter, but for bots.
+
+These layers stack: ClawHub supplies capabilities → OpenClaw runs the agent → Moltbook connects agents to each other. The naming is confusing because the whole ecosystem went from zero to hype in about a week, and the rapid rebrands left a mess of conflicting terminology across every tutorial and blog post.
+
+**The vault's role:** it wraps the OpenClaw runtime in a hardened container so you can experiment with all of this — run a Moltbook agent, test skills, observe the ecosystem — without giving an unvetted autonomous process your API keys, your files, or unrestricted network access.
+
 ```
 HOST (your machine)
 │
@@ -21,6 +33,10 @@ HOST (your machine)
 └── Kill Switch
       --soft (stop, preserve)  --hard (nuke containers)  --nuclear (destroy VM)
 ```
+
+<p align="center">
+  <img src="docs/architecture.svg" alt="OpenClaw-Vault architecture diagram" width="800"/>
+</p>
 
 ---
 
@@ -129,7 +145,7 @@ Fewer moving parts if you're on Docker Desktop 4.49+. Trade-off: the API key liv
 
 ## How You Actually Use This
 
-The OpenClaw-Vault runs the OpenClaw gateway headlessly inside a container. You don't sit inside a terminal typing commands at it. Here's a typical session:
+The OpenClaw-Vault runs OpenClaw headlessly inside a container. You don't sit inside a terminal typing commands at it. Here's a typical session:
 
 ### Control: Telegram
 
@@ -181,6 +197,9 @@ bash scripts/kill.sh --nuclear  # terminate WSL distro / VM (Phase 2)
 ```bash
 bash scripts/verify.sh
 ```
+
+<!-- TODO: capture terminal screenshot on next live deployment -->
+<!-- <p align="center"><img src="docs/verify-output.png" alt="15-point security verification — all PASS" width="700"/></p> -->
 
 | # | Check | What it proves |
 |---|-------|---------------|
@@ -258,13 +277,14 @@ These are not theoretical concerns — they are architectural realities of the O
 openclaw-vault/
 ├── Containerfile                # Hardened image (multi-stage, stripped)
 ├── compose.yml                  # Container + proxy orchestration
+├── definitions.md               # OpenClaw ecosystem terminology reference
 ├── vault-seccomp.json           # Custom syscall filter (vault)
 ├── vault-proxy-seccomp.json     # Custom syscall filter (proxy)
 ├── proxy/
 │   ├── vault-proxy.py           # Key injection + allowlist + logging
 │   └── allowlist.txt            # Editable domain allowlist
 ├── config/
-│   └── openclaw-hardening.yml   # Locked-down OpenClaw gateway config
+│   └── openclaw-hardening.yml   # Locked-down OpenClaw agent config
 ├── scripts/
 │   ├── setup.sh / setup.ps1     # One-command setup
 │   ├── kill.sh / kill.ps1       # Three-level kill switch

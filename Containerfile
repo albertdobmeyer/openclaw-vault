@@ -7,7 +7,7 @@
 # node 20.18.2-alpine — pinned 2026-02-26
 FROM node:20-alpine@sha256:ba8312129a193a1f1a781d93afcf6e641956d6e48e3ddefa9b64cd86790ee64c AS builder
 
-# Install OpenClaw CLI (pinned to stable release)
+# Install OpenClaw agent runtime
 RUN npm install -g @anthropic-ai/openclaw@2026.2.17
 
 # --- Production stage ---
