@@ -226,6 +226,15 @@ configs:
     restart_required: true
     restart_command: soft-stop
 
+prerequisites:
+  container_runtime: true
+  setup_command: setup
+  config_files:
+    - path: .env
+      template: .env.example
+      description: API keys and runtime configuration
+  check_command: podman image exists openclaw-vault 2>/dev/null || docker image inspect openclaw-vault >/dev/null 2>&1
+
 health:
   - id: container-status
     name: Container
