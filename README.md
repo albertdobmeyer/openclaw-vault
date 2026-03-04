@@ -1,5 +1,7 @@
 # OpenClaw-Vault
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 You've decided to run [OpenClaw](https://github.com/anthropics/openclaw). This makes that decision less likely to ruin your day.
 
 **The headline feature:** your API key never enters the container. A proxy sidecar injects it into outbound requests at the network layer. Even with full container compromise, `env | grep API` returns nothing. No other hardening guide does this.

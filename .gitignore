@@ -39,6 +39,9 @@ node_modules/
 dist/
 build/
 
+# Claude Code local settings
+.claude/
+
 # Screenshots / temp images
 *.png
 !docs/*.png

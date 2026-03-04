@@ -87,9 +87,6 @@ The component.yml declares these commands for the GUI. They map to shell scripts
 | `verify` | `make verify` | safe | 15-point security check |
 | `logs` | `podman logs -f openclaw-vault` | safe | Stream vault logs |
 | `proxy-logs` | `podman logs -f openclaw-proxy` | safe | Stream proxy logs |
-
-**Note**: The component.yml references `make` commands. A Makefile wrapping the shell scripts is needed for full GUI integration. Until then, use `bash scripts/<name>.sh` directly.
-
 ## Editable Configs (via GUI)
 
 | Path | Format | Danger | Notes |
