@@ -6,7 +6,8 @@
 # format (path = full URL, Host header = target domain) so mitmproxy intercepts.
 set -uo pipefail
 
-RUNTIME="${RUNTIME:-podman}"
+RUNTIME="podman"
+command -v podman &>/dev/null || RUNTIME="docker"
 CONTAINER="openclaw-vault"
 PASS=0
 FAIL=0

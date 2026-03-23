@@ -29,9 +29,13 @@ Not blocking anything — these are Phase 2 aspirational.
 
 ---
 
-## Test Bug
+## Resolved (Phase 0 — 2026-03-23)
 
-- [ ] `tests/test-network-isolation.sh` tests 1-2 use `wget` to verify blocked domains, but `wget` was intentionally stripped from the container image for security. `verify.sh` already works around this by using Node.js `http.get()`. Fix: replace `wget` with a Node.js equivalent or `curl` (if available).
+- [x] `tests/test-network-isolation.sh` — replaced `wget` with Node.js `http` module (matches verify.sh pattern)
+- [x] `component.yml` proxy-logs command — fixed container name `openclaw-proxy` -> `vault-proxy`
+- [x] `CLAUDE.md` command table — same proxy container name fix
+- [x] `proxy/vault-proxy.py` anthropic-version header — made configurable via `ANTHROPIC_API_VERSION` env var
+- [x] `compose.yml` — passes `ANTHROPIC_API_VERSION` to proxy container with default
 
 ---
 
