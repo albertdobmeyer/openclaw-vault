@@ -40,6 +40,9 @@ services:
       - HTTPS_PROXY=http://vault-proxy:8080
       - NO_PROXY=localhost,127.0.0.1
       # API keys are NOT here — they live in the proxy only
+      # Telegram bot token — needed by OpenClaw's Telegram plugin inside the container.
+      # This is a bot token (not a user account), revocable via @BotFather anytime.
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
     stdin_open: true
     tty: true
 
