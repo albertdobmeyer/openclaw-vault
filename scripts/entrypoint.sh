@@ -34,5 +34,28 @@ if [ ! -f "$CERT" ] || ! grep -q "END CERTIFICATE" "$CERT" 2>/dev/null; then
     exit 1
 fi
 
+# --- Create auth profile with placeholder key ---
+# OpenClaw requires an API key in its auth store to even attempt API calls.
+# We give it a DUMMY placeholder. The vault-proxy sidecar replaces it with
+# the real key at the network layer (header injection). The agent never
+# sees the real key — only this placeholder.
+AUTH_DIR="/home/vault/.openclaw/agents/main/agent"
+mkdir -p "$AUTH_DIR"
+cat > "$AUTH_DIR/auth-profiles.json" << 'AUTHEOF'
+{
+  "profiles": {
+    "anthropic:api": {
+      "provider": "anthropic",
+      "type": "api_key",
+      "key": "sk-ant-api03-placeholder-vault-proxy-will-inject-real-key-placeholder"
+    }
+  },
+  "order": {
+    "anthropic": ["anthropic:api"]
+  }
+}
+AUTHEOF
+echo "[vault] Auth profile installed (placeholder key — real key injected by proxy)"
+
 echo "[vault] Starting OpenClaw..."
 exec "$@"

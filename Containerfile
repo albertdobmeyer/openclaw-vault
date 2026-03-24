@@ -14,7 +14,9 @@ RUN apk --no-cache add git
 # --ignore-scripts skips node-llama-cpp's postinstall (native LLM compilation).
 # The vault doesn't use local LLMs — it connects to Anthropic/OpenAI via the proxy.
 # If openclaw has its own postinstall that's needed, we run it selectively below.
-RUN npm install -g openclaw@2026.2.17 --ignore-scripts
+# Updated to 2026.2.26 (from 2026.2.17) — includes fix for Telegram proxy support
+# (PR #30367: preserve proxy env vars in Telegram global dispatcher)
+RUN npm install -g openclaw@2026.2.26 --ignore-scripts
 
 # --- Production stage ---
 # node 22.22.1-alpine — pinned 2026-03-23 (OpenClaw requires Node >=22.12.0)
@@ -35,6 +37,12 @@ RUN apk --no-cache add tini ca-certificates \
 COPY --from=builder /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf ../lib/node_modules/openclaw/openclaw.mjs /usr/local/bin/openclaw
 
+# Apply security patches — fix Telegram proxy bypass (upstream issue #30338).
+# This ensures ALL traffic (including Telegram) routes through the vault proxy.
+# See patches/fix-telegram-proxy.sh for full documentation.
+COPY patches/fix-telegram-proxy.sh /tmp/fix-telegram-proxy.sh
+RUN chmod +x /tmp/fix-telegram-proxy.sh && /tmp/fix-telegram-proxy.sh && rm /tmp/fix-telegram-proxy.sh
+
 # Reuse the existing node user (uid/gid 1000) as our vault user.
 # Node 22-alpine already has node:1000. We rename it and set the home dir.
 RUN deluser node 2>/dev/null; delgroup node 2>/dev/null; \
@@ -48,6 +56,7 @@ RUN chown -R vault:vault /home/vault
 
 # Entrypoint wrapper — waits for proxy CA cert before starting OpenClaw
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY scripts/proxy-bootstrap.mjs /opt/proxy-bootstrap.mjs
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Proxy configuration — all traffic routes through vault-proxy sidecar
@@ -66,5 +75,6 @@ WORKDIR /home/vault/workspace
 # entrypoint.sh waits for proxy CA cert, then execs into the CMD
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 # Start the OpenClaw gateway in foreground mode.
+# --import loads the proxy bootstrap first, forcing all undici/fetch through the vault proxy.
 # Config is loaded from ~/.openclaw/openclaw.json (placed by entrypoint.sh).
-CMD ["openclaw", "gateway"]
+CMD ["node", "--import", "/opt/proxy-bootstrap.mjs", "/usr/local/lib/node_modules/openclaw/openclaw.mjs", "gateway"]
