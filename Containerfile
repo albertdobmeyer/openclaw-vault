@@ -41,9 +41,9 @@ RUN deluser node 2>/dev/null; delgroup node 2>/dev/null; \
     addgroup -g 1000 -S vault \
     && adduser -u 1000 -S vault -G vault -h /home/vault -s /bin/sh
 
-# Hardened OpenClaw config — stored in /opt so tmpfs on ~/.config doesn't shadow it.
-# entrypoint.sh copies it to the tmpfs at startup.
-COPY config/openclaw-hardening.yml /opt/openclaw-hardening.yml
+# Hardened OpenClaw config — stored in /opt so tmpfs on ~/.openclaw doesn't shadow it.
+# entrypoint.sh copies it to ~/.openclaw/openclaw.json at startup.
+COPY config/openclaw-hardening.json5 /opt/openclaw-hardening.json5
 RUN chown -R vault:vault /home/vault
 
 # Entrypoint wrapper — waits for proxy CA cert before starting OpenClaw
@@ -65,4 +65,6 @@ WORKDIR /home/vault/workspace
 # tini handles PID 1 responsibilities (signal forwarding, zombie reaping)
 # entrypoint.sh waits for proxy CA cert, then execs into the CMD
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["openclaw", "--config", "/home/vault/.config/openclaw/config.yml"]
+# Start the OpenClaw gateway in foreground mode.
+# Config is loaded from ~/.openclaw/openclaw.json (placed by entrypoint.sh).
+CMD ["openclaw", "gateway"]
