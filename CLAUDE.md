@@ -1,10 +1,16 @@
-# OpenClaw-Vault — Hardened Container Sandbox
+# OpenClaw-Vault — Hardened Security Harness for OpenClaw
 
 ## What This Is
 
-OpenClaw-Vault is a **hardened container sandbox** that safely runs the OpenClaw autonomous agent runtime. Its core security innovation: API keys never enter the container. A mitmproxy sidecar injects credentials at the network layer, so even full container compromise reveals nothing.
+OpenClaw-Vault is a **hardened security harness** that safely runs the OpenClaw autonomous agent runtime inside a containerized, proxy-gated environment. Its core innovations:
+
+1. **API keys never enter the agent container** — a mitmproxy sidecar injects credentials at the network layer
+2. **All network traffic is logged and filtered** — domain allowlist enforced by the proxy
+3. **Tool policy works with container isolation** — OpenClaw's own tool filtering prevents the LLM from seeing denied tools, while container hardening limits blast radius if any software layer has a bug
 
 **Role in ecosystem**: `runtime` — the innermost execution environment where AI agents actually run.
+
+**For detailed source code analysis:** See `docs/openclaw-internals.md`
 
 ## This Repo Is a Lobster-TrApp Component
 
@@ -30,52 +36,100 @@ cargo test -p lobster-trapp          # Rust tests parse this manifest specifical
 
 ```
 Two-container stack (compose.yml):
-┌─────────────────────────────────────────┐
-│  vault-proxy (mitmproxy sidecar)        │
-│  - Holds API keys                       │
-│  - Enforces domain allowlist            │
-│  - Logs all requests as JSON            │
-│  - Has internet access                  │
-└──────────────┬──────────────────────────┘
-               │ HTTP proxy
-┌──────────────┴──────────────────────────┐
-│  openclaw-vault (agent container)       │
-│  - Read-only root filesystem            │
-│  - All capabilities dropped             │
-│  - tmpfs mounts (noexec)                │
-│  - 256 PID limit, 4GB RAM, 2 CPUs      │
-│  - NO internet (routes through proxy)   │
-│  - NO API keys in environment           │
-└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│  vault-proxy (mitmproxy sidecar)            │
+│  - Holds real API keys (in env vars)        │
+│  - Enforces domain allowlist                │
+│  - Injects API key into request headers     │
+│  - Logs every request as structured JSON    │
+│  - Has internet access (vault-external net) │
+│  - SETUID/SETGID caps for gosu entrypoint   │
+└──────────────┬──────────────────────────────┘
+               │ HTTP proxy (vault-internal network)
+┌──────────────┴──────────────────────────────┐
+│  openclaw-vault (agent container)           │
+│  - OpenClaw gateway running with Haiku      │
+│  - Read-only root filesystem                │
+│  - All Linux capabilities dropped           │
+│  - Custom seccomp (deny-by-default)         │
+│  - noexec on all tmpfs mounts               │
+│  - no-new-privileges flag set               │
+│  - tini PID 1 (signal forwarding)           │
+│  - Non-root user (vault, uid 1000)          │
+│  - PID limit, 4GB RAM, 2 CPUs              │
+│  - NO internet (vault-internal only)        │
+│  - NO real API keys (placeholder only)      │
+│  - sandbox.mode="off" (container IS sandbox)│
+│  - Tool profile: minimal (deny: exec, fs)   │
+│  - Telegram bot for user interaction        │
+└─────────────────────────────────────────────┘
 ```
+
+### How Our Vault Synergizes With OpenClaw
+
+| OpenClaw Layer | What It Does | Our Vault Layer | What It Adds |
+|---------------|-------------|-----------------|-------------|
+| Tool policy (deny/allow) | Filters tools before LLM sees them | Container isolation | Limits blast radius if tool policy has a bug |
+| Exec security (deny/allowlist) | Blocks or gates shell commands | Read-only root + noexec tmpfs | Even if exec runs, can't write/execute files |
+| Auth profiles (API keys) | Stores and sends credentials | Proxy key injection | Real key never enters the container |
+| Sandbox mode (Docker) | Isolates tool execution | Not used — container IS the sandbox | Our container is stronger than OpenClaw's Docker sandbox |
+| DM policy (pairing) | Controls who can message the agent | Network proxy + allowlist | Controls what the agent can reach |
 
 ## Directory Structure
 
 ```
 openclaw-vault/
-├── Containerfile                 Hardened multi-stage image (node 20-alpine)
-├── compose.yml                   Container + proxy orchestration
-├── .env.example                  API key template (proxy-side only)
-├── component.yml                 MANIFEST — Lobster-TrApp contract
+├── Containerfile                   Hardened multi-stage image (Node 22-alpine)
+├── compose.yml                     Container + proxy orchestration
+├── .env.example                    API key + bot token template (gitignored)
+├── component.yml                   MANIFEST — Lobster-TrApp contract
 ├── config/
-│   ├── openclaw-hardening.yml    Agent lockdown (approval mode, no persistence)
-│   ├── vault-seccomp.json        Syscall filter (vault)
-│   └── vault-proxy-seccomp.json  Syscall filter (proxy)
+│   ├── openclaw-hardening.json5    Agent config (JSON5, Gear 1: Manual)
+│   ├── gear1-allowlist.txt         Gear 1 domain template
+│   ├── vault-seccomp.json          Syscall filter (vault container)
+│   └── vault-proxy-seccomp.json    Syscall filter (proxy container)
+├── patches/
+│   └── fix-telegram-proxy.sh       Source patch: Telegram proxy bypass fix
 ├── proxy/
-│   ├── vault-proxy.py            mitmproxy script (key injection + allowlist)
-│   └── allowlist.txt             Domain allowlist (one per line)
+│   ├── vault-proxy.py              mitmproxy addon (key injection + allowlist)
+│   └── allowlist.txt               Active domain allowlist
 ├── scripts/
-│   ├── setup.sh / setup.ps1      One-command setup
-│   ├── kill.sh / kill.ps1        Three-level kill switch
-│   └── verify.sh                 15-point security verification
-├── monitoring/                   [Stubs] Skill scanner, log parser
-├── tests/                        Isolation verification tests
-└── docs/                         Architecture diagrams, threat definitions
+│   ├── entrypoint.sh               Container startup (config + CA cert + auth)
+│   ├── proxy-bootstrap.mjs         Global undici proxy dispatcher
+│   ├── setup.sh / setup.ps1        One-command setup
+│   ├── kill.sh / kill.ps1          Three-level kill switch
+│   ├── switch-gear.sh              Gear switching (Gear 1 implemented)
+│   └── verify.sh                   15-point security verification
+├── monitoring/                     [Stubs] Skill scanner, log parser
+├── tests/                          Isolation verification tests
+└── docs/
+    ├── openclaw-internals.md       Source code analysis (verified knowledge)
+    ├── phase1-findings.md          Phase 1 compatibility test results
+    ├── phase2-test-results.md      Phase 2 Gear 1 test results (pending)
+    └── setup-guide.md              Non-technical user setup guide
 ```
 
-## Commands
+## OpenClaw Configuration
 
-The component.yml declares these commands for the GUI. They map to shell scripts:
+**Format:** JSON5 (NOT YAML). File: `~/.openclaw/openclaw.json` inside the container.
+**Validation:** Zod schema at startup — unknown keys cause Gateway to refuse to start.
+**Config placed by:** `scripts/entrypoint.sh` copies `config/openclaw-hardening.json5` to the correct path.
+
+### Key Config Decisions
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `agents.defaults.model.primary` | `"anthropic/claude-haiku-4-5"` | Cheapest model, $5 test key |
+| `agents.defaults.sandbox.mode` | `"off"` | Container IS the sandbox; no Docker socket available |
+| `tools.profile` | `"minimal"` | Gear 1: messaging + read-only only |
+| `tools.deny` | `[exec, process, browser, group:runtime, group:fs, ...]` | Gear 1: maximum lockdown |
+| `tools.exec.security` | `"deny"` | Double-deny: tool denied AND exec security denied |
+| `tools.elevated.enabled` | `false` | Permanently disabled in all gears |
+| `gateway.mode` | `"local"` | Required for containerized operation |
+| `channels.telegram.dmPolicy` | `"pairing"` | Each sender must be approved |
+
+## Commands
 
 | Command ID | Shell | Danger | Description |
 |-----------|-------|--------|-------------|
@@ -87,44 +141,44 @@ The component.yml declares these commands for the GUI. They map to shell scripts
 | `verify` | `make verify` | safe | 15-point security check |
 | `logs` | `podman logs -f openclaw-vault` | safe | Stream vault logs |
 | `proxy-logs` | `podman logs -f vault-proxy` | safe | Stream proxy logs |
+
 ## Editable Configs (via GUI)
 
 | Path | Format | Danger | Notes |
 |------|--------|--------|-------|
-| `.env` | env | caution | API keys (proxy-side). Restart required. |
-| `proxy/allowlist.txt` | line-list | safe | Domain allowlist. Hot-reloadable. |
-| `config/openclaw-hardening.yml` | yaml | destructive | Agent security policy. Restart required. |
+| `.env` | env | caution | API keys + bot tokens. Restart required. |
+| `proxy/allowlist.txt` | line-list | safe | Domain allowlist. Hot-reloadable (SIGHUP). |
+| `config/openclaw-hardening.json5` | json5 | destructive | Agent security policy. Rebuild required. |
+
+## Security Patches Applied
+
+| Patch | Target | Purpose | Removable When |
+|-------|--------|---------|----------------|
+| `patches/fix-telegram-proxy.sh` | `dist/send-DslMV0Oj.js` | Preserves ProxyAgent in Telegram global dispatcher | OpenClaw ships upstream fix (PR #30367) |
 
 ## Security Model
 
-1. **Proxy-injected credentials** — API keys exist only in the proxy container's environment
-2. **Domain allowlist** — Only explicitly listed domains are reachable
-3. **Read-only filesystem** — Container root is immutable at runtime
-4. **Approval mode** — Every agent tool execution requires explicit approval
-5. **No persistence** — Container state doesn't survive restarts
-6. **Custom seccomp** — Minimal syscall surface for both containers
+### Six Defense Layers
+1. **Container isolation** — read-only root, caps dropped, seccomp, noexec, non-root, PID/mem limits
+2. **Network proxy** — domain allowlist, API key injection, request logging, payload size limits
+3. **Tool policy** — deny list filters tools BEFORE LLM sees them (verified in source code)
+4. **Application restrictions** — sandbox.mode, workspaceOnly, elevated disabled
+5. **Exec controls** — security: deny, ask: always (double-deny in Gear 1)
+6. **Hardening config** — DM pairing, no persistence, telemetry disabled
 
 ### 15-Point Verification (verify.sh)
-Validates: proxy reachable, blocked domains return 403, read-only root, capabilities dropped, no host mounts, API keys absent from env, no docker socket, no sudo, non-root user, seccomp loaded, noexec /tmp, no-new-privileges, PID limit, config approval mode.
-
-## Dual-Copy Sync
-
-This repo may exist in two places on your machine:
-- **Standalone**: `B:\REPOS\local-llm\openclaw-vault\`
-- **Submodule**: `B:\REPOS\local-llm\lobster-trapp\components\openclaw-vault\`
-
-After pushing changes from either location, sync the other:
-```bash
-# In the other copy:
-git pull
-# If submodule copy, also update parent:
-cd ../.. && git add components/openclaw-vault && git commit -m "Update openclaw-vault ref"
-```
+Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabilities dropped, no host mounts, no Windows interop, API keys absent from env, no docker socket, no sudo, non-root user, seccomp loaded, noexec /tmp, no-new-privileges, PID limit, exec security = deny.
 
 ## What NOT to Do
 
 - Do not change `identity.id` or `identity.role` in component.yml without coordinating with lobster-trapp
 - Do not remove or rename command IDs that the GUI depends on — add new ones instead
-- Do not put API keys anywhere except `.env` (which is gitignored) — they belong in the proxy only
+- Do not put real API keys anywhere except `.env` (which is gitignored) — they belong in the proxy only
 - Do not disable seccomp profiles or add capabilities — the security model is defense-in-depth
-- Do not modify allowlist.txt to include ClawHub domains without understanding the 11.9% malware rate
+- Do not modify allowlist.txt to include ClawHub domains (11.9% malware rate)
+- Do not set `tools.elevated.enabled: true` — permanently disabled
+- Do not add interpreters (node, sh, python) to `tools.exec.safeBins`
+- Do not change `sandbox.mode` from `"off"` — the container IS the sandbox
+
+---
+*Last updated: 2026-03-24 — Post Phase 1+2 source code analysis*

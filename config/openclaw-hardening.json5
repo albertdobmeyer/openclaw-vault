@@ -17,13 +17,12 @@
         primary: "anthropic/claude-haiku-4-5",
       },
 
-      // Sandbox: "non-main" prevents running as primary/main agent.
-      // Note: sandbox container spawning won't work inside the vault (no Docker socket),
-      // but the application-level restrictions still apply.
+      // Sandbox: "off" because the vault container IS the sandbox.
+      // OpenClaw's sandbox mode tries to spawn Docker containers, but we have no
+      // Docker socket (by design). Our security comes from Layers 1-2 (container
+      // isolation + network proxy), not from OpenClaw's built-in sandbox.
       sandbox: {
-        mode: "non-main",
-        scope: "session",
-        workspaceAccess: "none",
+        mode: "off",
       },
     },
   },
