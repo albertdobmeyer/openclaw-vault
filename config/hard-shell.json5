@@ -1,0 +1,91 @@
+// OpenClaw-Vault: Hardened OpenClaw Agent Configuration (Gear 1 — Manual)
+//
+// ██████████████████████████████████████████████████████████████████████
+// █  DO NOT INSTALL SKILLS FROM CLAWHUB WITHOUT MANUAL CODE REVIEW   █
+// █  11.9% malicious rate (ClawHavoc). You have been warned.         █
+// ██████████████████████████████████████████████████████████████████████
+//
+// JSON5 format — comments and trailing commas are valid.
+// Unknown keys cause the Gateway to refuse to start (Zod schema validation).
+// Config key paths match: https://docs.openclaw.ai/gateway/configuration
+{
+  // --- Agent defaults ---
+  agents: {
+    defaults: {
+      // Model: use the cheapest model for testing. Override per-gear.
+      model: {
+        primary: "anthropic/claude-haiku-4-5",
+      },
+
+      // Sandbox: "off" because the vault container IS the sandbox.
+      // OpenClaw's sandbox mode tries to spawn Docker containers, but we have no
+      // Docker socket (by design). Our security comes from Layers 1-2 (container
+      // isolation + network proxy), not from OpenClaw's built-in sandbox.
+      sandbox: {
+        mode: "off",
+      },
+    },
+  },
+
+  // --- Tool restrictions (Gear 1: maximum lockdown) ---
+  tools: {
+    profile: "minimal",
+    deny: [
+      "group:runtime",
+      "group:automation",
+      "group:fs",
+      "group:sessions",
+      "sessions_spawn",
+      "sessions_send",
+      "gateway",
+      "cron",
+      "exec",
+      "process",
+      "browser",
+    ],
+
+    // Exec: completely blocked in Gear 1
+    exec: {
+      security: "deny",
+      ask: "always",
+      host: "sandbox",
+      // Note: strictInlineEval was removed — key does not exist in OpenClaw 2026.2.17 schema
+    },
+
+    // Elevated access: PERMANENTLY DISABLED in all gears
+    elevated: {
+      enabled: false,
+    },
+
+    // Filesystem: workspace only (defense-in-depth, exec is already denied)
+    fs: {
+      workspaceOnly: true,
+    },
+  },
+
+  // --- Gateway: local mode, loopback only ---
+  gateway: {
+    mode: "local",
+    bind: "loopback",
+  },
+
+  // --- Session: per-channel-peer isolation ---
+  session: {
+    dmScope: "per-channel-peer",
+  },
+
+  // --- DM policy: pairing mode (strictest) ---
+  channels: {
+    telegram: {
+      dmPolicy: "pairing",
+    },
+    whatsapp: {
+      dmPolicy: "pairing",
+    },
+  },
+
+  // --- Telemetry: disabled ---
+  logging: {
+    redactSensitive: "tools",
+  },
+}

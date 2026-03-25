@@ -1,0 +1,103 @@
+// OpenClaw-Vault: Split Shell Configuration
+//
+// Split Shell enables file read/write in the workspace (persistent memory)
+// while keeping exec, browser, cron, and sessions denied.
+//
+// What's different from Hard Shell:
+//   - group:fs REMOVED from deny list → agent can read/write files
+//   - tools.fs.workspaceOnly = true → restricts to workspace/ directory only
+//   - Persistent volume → memory, identity, and pairing survive restarts
+//
+// What stays the same:
+//   - Exec denied (no shell commands)
+//   - Browser denied (no web access)
+//   - Cron denied (no scheduled tasks)
+//   - Sessions denied (no sub-agents)
+//   - Elevated permanently disabled
+//   - Proxy allowlist unchanged (3 domains)
+//   - Exoskeleton fully enforced (read-only root, caps dropped, seccomp, noexec)
+//
+// JSON5 format — comments and trailing commas are valid.
+// Unknown keys cause the Gateway to refuse to start (Zod schema validation).
+{
+  // --- Agent defaults ---
+  agents: {
+    defaults: {
+      model: {
+        primary: "anthropic/claude-haiku-4-5",
+      },
+
+      // Sandbox: "off" — the vault container IS the sandbox.
+      sandbox: {
+        mode: "off",
+      },
+    },
+  },
+
+  // --- Tool restrictions (Split Shell: workspace file I/O enabled) ---
+  tools: {
+    // "minimal" profile: messaging + read-only tools.
+    // With group:fs removed from deny, read/write/edit/apply_patch become available.
+    profile: "minimal",
+    deny: [
+      "group:runtime",      // No exec, no process
+      "group:automation",   // No cron, no webhooks
+      "group:sessions",     // No sub-agents
+      "sessions_spawn",     // Explicit: no sub-agent spawning
+      "sessions_send",      // Explicit: no cross-session messaging
+      "gateway",            // Cannot modify its own gateway
+      "cron",               // No scheduled tasks
+      "exec",               // No shell commands
+      "process",            // No background processes
+      "browser",            // No web browsing
+      // NOTE: "group:fs" is NOT in this list — file I/O is ENABLED in Split Shell
+    ],
+
+    // Exec: still completely blocked
+    exec: {
+      security: "deny",
+      ask: "always",
+      host: "sandbox",
+    },
+
+    // Elevated access: PERMANENTLY DISABLED in all shell levels
+    elevated: {
+      enabled: false,
+    },
+
+    // Filesystem: workspace only — the critical boundary.
+    // Agent can read/write inside ~/.openclaw/workspace/ but NOWHERE ELSE.
+    // Enforced by assertSandboxPath() with symlink escape detection.
+    // Defense-in-depth: even if this fails, the container exoskeleton limits access.
+    fs: {
+      workspaceOnly: true,
+    },
+  },
+
+  // --- Gateway: local mode, loopback only ---
+  gateway: {
+    mode: "local",
+    bind: "loopback",
+  },
+
+  // --- Session: per-channel-peer isolation ---
+  session: {
+    dmScope: "per-channel-peer",
+  },
+
+  // --- Channels ---
+  channels: {
+    telegram: {
+      dmPolicy: "pairing",
+      proxy: "http://vault-proxy:8080",
+    },
+    whatsapp: {
+      dmPolicy: "pairing",
+    },
+  },
+
+  // --- Telemetry: disabled ---
+  logging: {
+    redactSensitive: "tools",
+  },
+}
