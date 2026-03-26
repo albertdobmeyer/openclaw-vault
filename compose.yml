@@ -16,10 +16,15 @@ services:
     container_name: openclaw-vault
     read_only: true
     tmpfs:
+      # /tmp stays volatile — scratch space only
       - /tmp:size=256m,noexec,nosuid,mode=1777
       - /home/vault/.config:size=64m,noexec,nosuid,mode=1777
-      - /home/vault/.openclaw:size=64m,noexec,nosuid,mode=1777
       - /home/vault/workspace:size=1g,noexec,nosuid,mode=1777
+    # ~/.openclaw is now a PERSISTENT VOLUME (not tmpfs).
+    # This preserves: memory files, session transcripts, Telegram pairing,
+    # agent identity, and running config across container restarts.
+    # The entrypoint only installs config on first run — subsequent starts
+    # preserve the existing state.
     security_opt:
       - no-new-privileges:true
       - seccomp=config/vault-seccomp.json
@@ -35,6 +40,7 @@ services:
         condition: service_started
     volumes:
       - proxy-ca:/opt/proxy-ca:ro
+      - vault-data:/home/vault/.openclaw
     environment:
       - HTTP_PROXY=http://vault-proxy:8080
       - HTTPS_PROXY=http://vault-proxy:8080
@@ -98,4 +104,6 @@ volumes:
   vault-proxy-logs:
     driver: local
   proxy-ca:
+    driver: local
+  vault-data:       # Persistent agent data — memory, sessions, pairing, config
     driver: local
