@@ -45,24 +45,25 @@
 
   // --- Tool restrictions (Split Shell: controlled exec + file I/O) ---
   tools: {
-    profile: "minimal",
+    // Valid profiles: minimal, coding, messaging, full
+    // "coding" includes: exec, read, apply_patch, grep, find, ls, process.
+    // "minimal" does NOT include exec — which is why exec was never available before.
+    // We use "coding" and deny what we don't want from this set.
+    profile: "coding",
     deny: [
-      // STILL DENIED in Split Shell:
+      // DENIED in Split Shell — things "standard" includes that we don't want:
+      "browser",            // No web browsing
+      "web_search",         // No web search
+      "web_fetch",          // No URL fetching
       "group:automation",   // No cron, no webhooks
       "group:sessions",     // No sub-agents
       "sessions_spawn",     // Explicit: no sub-agent spawning
       "sessions_send",      // Explicit: no cross-session messaging
       "gateway",            // Cannot modify its own gateway
       "cron",               // No scheduled tasks
-      "browser",            // No web browsing
       "canvas",             // No visual workspace
       "nodes",              // No device control
-
-      // REMOVED from deny (was in Hard Shell):
-      // "group:runtime"    → exec now ENABLED (with safeBins + ask: always)
-      // "group:fs"         → read, apply_patch now available
-      // "exec"             → now allowed through the allowlist mechanism
-      // "process"          → still denied via group:runtime? No — see note below
+      "process",            // No background processes
     ],
 
     // Exec: ENABLED with strict controls
