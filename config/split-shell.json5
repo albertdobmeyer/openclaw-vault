@@ -103,6 +103,30 @@
         "jq",        // JSON processing
         "tee",       // Write to file and stdout
       ],
+
+      // safeBinProfiles: REQUIRED by OpenClaw for each safeBins entry.
+      // Without profiles, safeBins are silently dropped ("ignoring unprofiled").
+      // Empty object = no argument restrictions (all args allowed for that binary).
+      // Future: add argument restrictions per-binary for tighter control.
+      safeBinProfiles: {
+        cat: {},
+        echo: {},
+        mkdir: {},
+        cp: {},
+        mv: {},
+        rm: {},
+        touch: {},
+        date: {},
+        head: {},
+        tail: {},
+        wc: {},
+        sort: {},
+        uniq: {},
+        tr: {},
+        cut: {},
+        jq: {},
+        tee: {},
+      },
     },
 
     // Elevated access: PERMANENTLY DISABLED in all shell levels

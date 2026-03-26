@@ -1,63 +1,143 @@
-// OpenClaw-Vault: Hardened OpenClaw Agent Configuration (Gear 1 — Manual)
+// OpenClaw-Vault: Split Shell Configuration
 //
-// ██████████████████████████████████████████████████████████████████████
-// █  DO NOT INSTALL SKILLS FROM CLAWHUB WITHOUT MANUAL CODE REVIEW   █
-// █  11.9% malicious rate (ClawHavoc). You have been warned.         █
-// ██████████████████████████████████████████████████████████████████████
+// Split Shell enables the agent to do useful work through controlled exec access
+// with a strict safeBins allowlist and human approval for every command.
+//
+// What's different from Hard Shell:
+//   - exec ENABLED with security: "allowlist" + ask: "always"
+//   - safeBins: file manipulation commands only (cat, mkdir, cp, mv, etc.)
+//   - group:fs removed from deny → read, apply_patch available
+//   - Persistent volume → memory, identity, and pairing survive restarts
+//
+// What stays the same:
+//   - Browser denied (no web access)
+//   - Cron denied (no scheduled tasks)
+//   - Sessions denied (no sub-agents)
+//   - Elevated permanently disabled
+//   - Proxy allowlist unchanged (3 domains)
+//   - Exoskeleton fully enforced (read-only root, caps dropped, seccomp, noexec)
+//
+// Safety model (three independent layers):
+//   Layer 1: safeBins allowlist — only approved binaries can run
+//   Layer 2: ask "always" — every command shown to user for approval via Telegram
+//   Layer 3: Exoskeleton — even if layers 1-2 fail, container limits damage
+//
+// NEVER add to safeBins: sh, bash, node, python, ruby, perl (interpreters)
+// NEVER add to safeBins: curl, wget (network tools — stripped from image anyway)
+// NEVER add to safeBins: chmod, chown (permission manipulation)
 //
 // JSON5 format — comments and trailing commas are valid.
 // Unknown keys cause the Gateway to refuse to start (Zod schema validation).
-// Config key paths match: https://docs.openclaw.ai/gateway/configuration
 {
   // --- Agent defaults ---
   agents: {
     defaults: {
-      // Model: use the cheapest model for testing. Override per-gear.
       model: {
         primary: "anthropic/claude-haiku-4-5",
       },
 
-      // Sandbox: "off" because the vault container IS the sandbox.
-      // OpenClaw's sandbox mode tries to spawn Docker containers, but we have no
-      // Docker socket (by design). Our security comes from Layers 1-2 (container
-      // isolation + network proxy), not from OpenClaw's built-in sandbox.
+      // Sandbox: "off" — the vault container IS the sandbox.
       sandbox: {
         mode: "off",
       },
     },
   },
 
-  // --- Tool restrictions (Gear 1: maximum lockdown) ---
+  // --- Tool restrictions (Split Shell: controlled exec + file I/O) ---
   tools: {
     profile: "minimal",
     deny: [
-      "group:runtime",
-      "group:automation",
-      "group:fs",
-      "group:sessions",
-      "sessions_spawn",
-      "sessions_send",
-      "gateway",
-      "cron",
-      "exec",
-      "process",
-      "browser",
+      // STILL DENIED in Split Shell:
+      "group:automation",   // No cron, no webhooks
+      "group:sessions",     // No sub-agents
+      "sessions_spawn",     // Explicit: no sub-agent spawning
+      "sessions_send",      // Explicit: no cross-session messaging
+      "gateway",            // Cannot modify its own gateway
+      "cron",               // No scheduled tasks
+      "browser",            // No web browsing
+      "canvas",             // No visual workspace
+      "nodes",              // No device control
+
+      // REMOVED from deny (was in Hard Shell):
+      // "group:runtime"    → exec now ENABLED (with safeBins + ask: always)
+      // "group:fs"         → read, apply_patch now available
+      // "exec"             → now allowed through the allowlist mechanism
+      // "process"          → still denied via group:runtime? No — see note below
     ],
 
-    // Exec: completely blocked in Gear 1
+    // Exec: ENABLED with strict controls
     exec: {
-      security: "deny",
+      // "allowlist" = only commands matching safeBins or approved patterns are allowed.
+      // Unknown commands trigger an approval request to the user via Telegram.
+      security: "allowlist",
+
+      // "always" = EVERY exec invocation requires user approval via Telegram,
+      // even if the binary is in safeBins. The user sees the exact command
+      // and taps Approve or Deny. No silent execution.
       ask: "always",
+
+      // Commands run inside the container (not on the host — there is no host access)
       host: "sandbox",
-      // Note: strictInlineEval was removed — key does not exist in OpenClaw 2026.2.17 schema
+
+      // safeBins: binaries that are pre-approved for the allowlist check.
+      // With ask: "always", these STILL require user approval — safeBins just means
+      // the command won't be rejected before reaching the approval step.
+      //
+      // ONLY file manipulation commands. No interpreters. No network tools.
+      safeBins: [
+        "cat",       // Read/write file contents
+        "echo",      // Write text to files
+        "mkdir",     // Create directories
+        "cp",        // Copy files
+        "mv",        // Move/rename files
+        "rm",        // Remove files (within workspace only — workspaceOnly enforced)
+        "touch",     // Create empty files
+        "date",      // Get current date/time (for timestamped notes)
+        "head",      // Read first N lines
+        "tail",      // Read last N lines
+        "wc",        // Word/line count
+        "sort",      // Sort file contents
+        "uniq",      // Deduplicate lines
+        "tr",        // Character translation
+        "cut",       // Extract columns
+        "jq",        // JSON processing
+        "tee",       // Write to file and stdout
+      ],
+
+      // safeBinProfiles: REQUIRED by OpenClaw for each safeBins entry.
+      // Without profiles, safeBins are silently dropped ("ignoring unprofiled").
+      // Empty object = no argument restrictions (all args allowed for that binary).
+      // Future: add argument restrictions per-binary for tighter control.
+      safeBinProfiles: {
+        cat: {},
+        echo: {},
+        mkdir: {},
+        cp: {},
+        mv: {},
+        rm: {},
+        touch: {},
+        date: {},
+        head: {},
+        tail: {},
+        wc: {},
+        sort: {},
+        uniq: {},
+        tr: {},
+        cut: {},
+        jq: {},
+        tee: {},
+      },
     },
 
-    // Elevated access: PERMANENTLY DISABLED in all gears
+    // Elevated access: PERMANENTLY DISABLED in all shell levels
     elevated: {
       enabled: false,
     },
 
-    // Filesystem: workspace only (defense-in-depth, exec is already denied)
+    // Filesystem: workspace only — the critical boundary.
+    // Agent can read/write inside ~/.openclaw/workspace/ but NOWHERE ELSE.
+    // Enforced by assertSandboxPath() with symlink escape detection.
+    // Defense-in-depth: even if this fails, the container exoskeleton limits access.
     fs: {
       workspaceOnly: true,
     },
@@ -74,10 +154,11 @@
     dmScope: "per-channel-peer",
   },
 
-  // --- DM policy: pairing mode (strictest) ---
+  // --- Channels ---
   channels: {
     telegram: {
       dmPolicy: "pairing",
+      proxy: "http://vault-proxy:8080",
     },
     whatsapp: {
       dmPolicy: "pairing",
