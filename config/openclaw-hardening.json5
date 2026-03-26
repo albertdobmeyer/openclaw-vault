@@ -77,8 +77,10 @@
       // and taps Approve or Deny. No silent execution.
       ask: "always",
 
-      // Commands run inside the container (not on the host — there is no host access)
-      host: "sandbox",
+      // "gateway" = commands run in the Gateway process (inside our container).
+      // "sandbox" would try to spawn Docker (which doesn't exist).
+      // The container IS the sandbox — gateway exec is already contained.
+      host: "gateway",
 
       // safeBins: binaries that are pre-approved for the allowlist check.
       // With ask: "always", these STILL require user approval — safeBins just means
