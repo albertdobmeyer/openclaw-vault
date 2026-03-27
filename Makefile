@@ -1,4 +1,4 @@
-.PHONY: help setup start stop kill nuclear verify network-report
+.PHONY: help setup start stop kill nuclear verify network-report session-report
 
 SHELL := /bin/bash
 
@@ -37,3 +37,6 @@ verify: ## Run 15-point security verification checks
 
 network-report: ## Analyze proxy logs for security anomalies
 	@python3 monitoring/network-log-parser.py
+
+session-report: ## Generate post-session summary of agent activity
+	@python3 monitoring/session-report.py

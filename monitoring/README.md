@@ -4,12 +4,12 @@ This directory contains tools for monitoring the vault at runtime. These answer:
 
 ## Tools
 
-| Tool | Status | Purpose |
-|------|--------|---------|
-| `network-log-parser.py` | Stub | Analyze proxy logs for anomalies (unexpected domains, large payloads, request frequency) |
-| `session-report.sh` | Stub | Generate human-readable post-session summary (duration, API calls, security events) |
+| Tool | Status | Run with | Purpose |
+|------|--------|----------|---------|
+| `network-log-parser.py` | Implemented | `make network-report` | Analyze proxy logs for anomalies (blocked requests, exfiltration attempts, key reflections, large payloads, frequency spikes) |
+| `session-report.py` | Implemented | `make session-report` | Generate post-session summary (duration, messages, tool calls, commands executed, files accessed, approval outcomes) |
 
-See `docs/roadmap.md` Phase 2 for implementation plans.
+Both tools treat all input as **untrusted data** from inside the container. All string fields are sanitized to prevent terminal injection. See the docstrings in each file for security details.
 
 ## Skill Scanning Does NOT Belong Here
 

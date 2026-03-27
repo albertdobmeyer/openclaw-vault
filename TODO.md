@@ -8,8 +8,8 @@ Tracked gaps. See `docs/roadmap.md` for the phased development plan, and `docs/t
 
 The following scripts exist but are placeholder implementations (~15 lines each, print a message and exit):
 
-- [ ] `monitoring/network-log-parser.py` — Should parse mitmproxy JSON logs into structured security events
-- [ ] `monitoring/session-report.sh` — Should generate per-session summaries (API calls made, domains contacted, tool executions)
+- [x] `monitoring/network-log-parser.py` — Implemented: anomaly detection on proxy logs (2026-03-27)
+- [x] `monitoring/session-report.py` — Implemented: post-session summary generator (2026-03-27)
 
 Skill scanning was removed from this module — it belongs in clawhub-forge (`tools/skill-scan.sh`). See `monitoring/README.md`.
 
