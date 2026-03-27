@@ -129,7 +129,7 @@ else
     FAIL=$((FAIL + 1))
 fi
 
-# 15. Config integrity: exec security is deny (Gear 1 lockdown)
+# 15. Config integrity: exec security is deny (Hard Shell lockdown)
 # Config is now JSON5 at ~/.openclaw/openclaw.json
 check 15 "Config: exec security = deny" \
     "grep '\"deny\"' /home/vault/.openclaw/openclaw.json"

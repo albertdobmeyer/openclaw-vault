@@ -85,8 +85,8 @@ openclaw-vault/
 ├── .env.example                    API key + bot token template (gitignored)
 ├── component.yml                   MANIFEST — Lobster-TrApp contract
 ├── config/
-│   ├── openclaw-hardening.json5    Agent config (JSON5, Gear 1: Manual)
-│   ├── gear1-allowlist.txt         Gear 1 domain template
+│   ├── openclaw-hardening.json5    Agent config (JSON5, current shell level)
+│   ├── hard-shell-allowlist.txt    Hard Shell domain template
 │   ├── vault-seccomp.json          Syscall filter (vault container)
 │   └── vault-proxy-seccomp.json    Syscall filter (proxy container)
 ├── patches/
@@ -99,7 +99,7 @@ openclaw-vault/
 │   ├── proxy-bootstrap.mjs         Global undici proxy dispatcher
 │   ├── setup.sh / setup.ps1        One-command setup
 │   ├── kill.sh / kill.ps1          Three-level kill switch
-│   ├── switch-gear.sh              Gear switching (Gear 1 implemented)
+│   ├── switch-shell.sh             Shell level switching (Hard + Split implemented)
 │   └── verify.sh                   15-point security verification
 ├── monitoring/                     [Stubs] Skill scanner, log parser
 ├── tests/                          Isolation verification tests
@@ -164,11 +164,21 @@ openclaw-vault/
 2. **Network proxy** — domain allowlist, API key injection, request logging, payload size limits
 3. **Tool policy** — deny list filters tools BEFORE LLM sees them (verified in source code)
 4. **Application restrictions** — sandbox.mode, workspaceOnly, elevated disabled
-5. **Exec controls** — security: deny, ask: always (double-deny in Gear 1)
+5. **Exec controls** — security: allowlist, ask: always, safeBins whitelist (Split Shell)
 6. **Hardening config** — DM pairing, no persistence, telemetry disabled
 
 ### 15-Point Verification (verify.sh)
 Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabilities dropped, no host mounts, no Windows interop, API keys absent from env, no docker socket, no sudo, non-root user, seccomp loaded, noexec /tmp, no-new-privileges, PID limit, exec security = deny.
+
+## Development Principles
+
+**This is a security-first repository.** The development process must embody the same rigor we demand of the runtime:
+
+- Work slowly and methodically — one task at a time
+- Always validate a change before moving to the next task
+- Read and understand existing code before modifying it
+- No batching or rushing — security-critical work deserves patience
+- When in doubt, stop and verify rather than assume
 
 ## What NOT to Do
 
@@ -182,4 +192,4 @@ Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabil
 - Do not change `sandbox.mode` from `"off"` — the container IS the sandbox
 
 ---
-*Last updated: 2026-03-24 — Post Phase 1+2 source code analysis*
+*Last updated: 2026-03-27 — Trifecta harmonization, Split Shell active*

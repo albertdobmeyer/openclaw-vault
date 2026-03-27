@@ -1,4 +1,4 @@
-// OpenClaw-Vault: Hardened OpenClaw Agent Configuration (Gear 1 — Manual)
+// OpenClaw-Vault: Hardened OpenClaw Agent Configuration (Hard Shell)
 //
 // ██████████████████████████████████████████████████████████████████████
 // █  DO NOT INSTALL SKILLS FROM CLAWHUB WITHOUT MANUAL CODE REVIEW   █
@@ -12,7 +12,7 @@
   // --- Agent defaults ---
   agents: {
     defaults: {
-      // Model: use the cheapest model for testing. Override per-gear.
+      // Model: use the cheapest model for testing. Override per shell level.
       model: {
         primary: "anthropic/claude-haiku-4-5",
       },
@@ -27,7 +27,7 @@
     },
   },
 
-  // --- Tool restrictions (Gear 1: maximum lockdown) ---
+  // --- Tool restrictions (Hard Shell: maximum lockdown) ---
   tools: {
     profile: "minimal",
     deny: [
@@ -44,7 +44,7 @@
       "browser",
     ],
 
-    // Exec: completely blocked in Gear 1
+    // Exec: completely blocked in Hard Shell
     exec: {
       security: "deny",
       ask: "always",
@@ -52,7 +52,7 @@
       // Note: strictInlineEval was removed — key does not exist in OpenClaw 2026.2.17 schema
     },
 
-    // Elevated access: PERMANENTLY DISABLED in all gears
+    // Elevated access: PERMANENTLY DISABLED in all shell levels
     elevated: {
       enabled: false,
     },

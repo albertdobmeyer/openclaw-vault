@@ -204,7 +204,9 @@ The `executeNodeHostCommand()` function:
 4. Approval: `tools.exec.ask` can require human approval per command
 5. safeBins: pre-approved binaries that skip the allowlist
 
-**In Gear 1:** exec is denied at BOTH the tool policy level (tools.deny includes "exec") AND the exec security level (tools.exec.security = "deny"). Two independent guards, both blocking.
+**In Hard Shell:** exec is denied at BOTH the tool policy level (tools.deny includes "exec") AND the exec security level (tools.exec.security = "deny"). Two independent guards, both blocking.
+
+**In Split Shell:** exec is enabled with `security: "allowlist"` and `ask: "always"`. Only safeBins-approved commands execute, and each requires Telegram approval.
 
 ---
 

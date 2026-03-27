@@ -43,7 +43,7 @@ Three keys from our original config caused startup failures:
 
 **YES.** The Gateway runs at `ws://127.0.0.1:18789` inside the container. It supports WebSocket connections for session management, agent control, and configuration. However, connecting requires device authentication (Ed25519 keypair + device token). The CLI uses this API internally.
 
-**Hot reload confirmed:** The Gateway watches `~/.openclaw/openclaw.json` and applies changes automatically (debounce 300ms by default). This means Gear switching may be possible without container restart for Layers 3-6 changes.
+**Hot reload confirmed:** The Gateway watches `~/.openclaw/openclaw.json` and applies changes automatically (debounce 300ms by default). This means shell switching (molt) is possible without container restart for Layers 3-6 changes.
 
 ### Layer 4: Sandbox behavior without Docker socket
 
@@ -148,12 +148,14 @@ This means **Phase 2 must set up Telegram** before we can test actual agent inte
 
 ## Impact On Later Phases
 
-1. **Phase 2 (Gear 1 formalization):** Gear configs must be JSON5 with correct OpenClaw key paths. The old YAML config and `component.yml` references to it need updating.
+1. **Hard Shell formalization:** ~~Gear configs must be JSON5 with correct OpenClaw key paths. The old YAML config and `component.yml` references to it need updating.~~ **DONE** — configs are JSON5, component.yml updated (2026-03-27).
 
-2. **Phase 3 (Monitoring):** Proxy logs work (JSON at `/var/log/vault-proxy/requests.jsonl`). OpenClaw's own logs are at `/tmp/openclaw/openclaw-*.log` inside the container. Both can be parsed.
+2. **Monitoring:** Proxy logs work (JSON at `/var/log/vault-proxy/requests.jsonl`). OpenClaw's own logs are at `/tmp/openclaw/openclaw-*.log` inside the container. Both can be parsed. See `docs/roadmap.md` Phase 2.
 
-3. **Phase 4 (Gear 2):** Telegram/WhatsApp setup is required for any interaction. Credential persistence (persistent volume) is confirmed necessary. Hot-reload via config file watching enables gear switching without container restart for Layers 3-6.
+3. **Split Shell:** ~~Telegram/WhatsApp setup is required for any interaction. Credential persistence (persistent volume) is confirmed necessary. Hot-reload via config file watching enables shell switching without container restart for Layers 3-6.~~ **DONE** — Split Shell implemented with persistent volume and hot-reload (2026-03-25).
 
-4. **Spec update needed:** The spec references the old YAML config format in multiple places. Update to reflect JSON5 format and correct key paths.
+4. **Spec update needed:** ~~The spec references the old YAML config format in multiple places. Update to reflect JSON5 format and correct key paths.~~ **DONE** — component.yml and CLAUDE.md updated (2026-03-27).
 
 5. **Network test rewrite:** The test-network-isolation.sh needs a proxy-aware HTTP client. This is a test tooling issue, not a security issue.
+
+*Note: This document uses the original phase numbering from early development. "Gear 1/2/3" has since been renamed to "Hard/Split/Soft Shell" — see `GLOSSARY.md` in the lobster-trapp root.*

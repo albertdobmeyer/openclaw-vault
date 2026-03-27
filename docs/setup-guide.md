@@ -235,7 +235,7 @@ You'll know it's ready when the bot responds to your Telegram message.
 
 ### Why You Need to Re-Pair After Every Restart
 
-In Gear 1 (Manual mode), the agent has **no persistent memory**. Every restart is a clean slate — including the Telegram pairing. This is a security feature: if the container were ever compromised, restarting it wipes all session data.
+In Hard Shell mode, the agent has **no persistent memory**. Every restart is a clean slate — including the Telegram pairing. This is a security feature: if the container were ever compromised, restarting it wipes all session data. (In Split Shell mode, memory and pairing persist across restarts via a persistent volume.)
 
 This means:
 - After every `podman-compose up -d`, send a message to your bot and approve the new pairing code
@@ -250,7 +250,7 @@ The vault uses approximately **500 MB of RAM** when running (two containers). On
 
 ## Important: The Agent May Claim False Capabilities
 
-The AI agent may sometimes **claim it can do things it actually cannot**. For example, it might say "I ran a command and here are the results" when it actually has no ability to run commands in Gear 1.
+The AI agent may sometimes **claim it can do things it actually cannot**. For example, it might say "I ran a command and here are the results" when it actually has no ability to run commands in Hard Shell mode.
 
 **This is a known behavior of smaller AI models.** The agent isn't being malicious — it's trying to be helpful and fills in gaps with plausible-sounding answers. But it can be misleading.
 
@@ -260,7 +260,7 @@ The AI agent may sometimes **claim it can do things it actually cannot**. For ex
 podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl | tail -10
 ```
 
-If the action doesn't appear in the logs, the agent fabricated it. In Gear 1, the agent can ONLY have conversations — it cannot run commands, read files, or access websites beyond the approved list.
+If the action doesn't appear in the logs, the agent fabricated it. In Hard Shell mode, the agent can ONLY have conversations — it cannot run commands, read files, or access websites beyond the approved list. In Split Shell mode, the agent can execute approved file commands, but every command requires your Telegram approval first.
 
 **Rule of thumb:** Trust the proxy logs, not the agent's claims.
 
@@ -303,7 +303,7 @@ podman-compose up -d
 This recreates the containers with the correct paths.
 
 ### Agent claims to run commands but nothing happens
-This is normal in Gear 1 (Manual mode). The agent's tools are disabled — it cannot run commands, read files, or browse the web. If it claims otherwise, it's fabricating. See the "Important: The Agent May Claim False Capabilities" section above.
+This is normal in Hard Shell mode. The agent's tools are disabled — it cannot run commands, read files, or browse the web. If it claims otherwise, it's fabricating. See the "Important: The Agent May Claim False Capabilities" section above.
 
 ---
 
@@ -338,4 +338,4 @@ Your API key is stored only in the proxy, never in the agent container. Even if 
 
 - **Explore the settings:** Check `config/openclaw-hardening.json5` to see the security configuration
 - **View proxy logs:** `podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl` shows every request the agent made
-- **Learn about gears:** The vault supports multiple security levels (Manual, Semi-Auto, Full-Auto) — coming in future updates
+- **Learn about shell levels:** The vault supports three security levels — Hard Shell (conversation only), Split Shell (file commands with approval), and Soft Shell (broader autonomy, coming soon). Switch with `bash scripts/switch-shell.sh`

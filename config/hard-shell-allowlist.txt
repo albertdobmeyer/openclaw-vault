@@ -1,4 +1,4 @@
-# OpenClaw-Vault: Domain Allowlist (Gear 1 — Manual)
+# OpenClaw-Vault: Domain Allowlist (Hard Shell)
 # One domain per line. Subdomains are automatically included.
 # Lines starting with # are comments.
 #
@@ -12,7 +12,7 @@ api.openai.com
 # --- Messaging channel APIs ---
 api.telegram.org
 
-# --- Domains NOT allowed in Gear 1 ---
+# --- Domains NOT allowed in Hard Shell ---
 # raw.githubusercontent.com  # Not needed in Manual mode (no skill source review)
 # registry.npmjs.org         # npm install runs arbitrary lifecycle scripts
 # clawdhub.com               # 11.9% malicious rate (ClawHavoc)
