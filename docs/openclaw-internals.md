@@ -1,9 +1,11 @@
 # OpenClaw Internals — Source Code Analysis
 
 **Date:** 2026-03-24
-**OpenClaw version:** 2026.2.26
+**OpenClaw version:** 2026.2.26 (current pinned version — see `Containerfile` line 19)
 **Analysis method:** Reading dist/ bundle files inside the container image
 **Purpose:** We cannot secure what we don't understand. This document captures verified knowledge about OpenClaw's architecture from the actual source code — not documentation, not blog posts, not assumptions.
+
+*Note: This analysis supersedes the Phase 1 findings (`phase1-findings.md`), which tested against `openclaw@2026.2.17`. The upgrade to 2026.2.26 added Telegram proxy support. The Containerfile is the single source of truth for the pinned version.*
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-23
 **Vault version:** openclaw-vault @ main (post-Phase-0 + Phase-1 fixes)
-**OpenClaw version:** openclaw@2026.2.17
+**OpenClaw version:** openclaw@2026.2.17 (since upgraded to 2026.2.26 — see `Containerfile` line 19)
 **Test key:** Anthropic Haiku-only, $5 cap, no web tools
 **Container runtime:** Podman 4.9.3 (rootless) on Ubuntu 24.04
 
