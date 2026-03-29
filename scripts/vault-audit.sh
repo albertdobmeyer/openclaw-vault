@@ -364,10 +364,12 @@ audit_config() {
         grep -o '"security"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | \
         grep -o '"[^"]*"$' | tr -d '"')
 
+    # Extract sandbox.mode specifically — grep for "mode" after "sandbox" context.
+    # The config has multiple "mode" keys (compaction.mode, sandbox.mode, gateway.mode).
+    # We use python for reliable JSON parsing instead of fragile grep chains.
     local sandbox_mode
     sandbox_mode=$(exec_in_vault "cat /home/vault/.openclaw/openclaw.json" 2>/dev/null | \
-        grep -o '"mode"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | \
-        grep -o '"[^"]*"$' | tr -d '"')
+        python3 -c "import sys,json; c=json.loads(sys.stdin.read()); print(c.get('agents',{}).get('defaults',{}).get('sandbox',{}).get('mode','unknown'))" 2>/dev/null || echo "unknown")
 
     local elevated
     elevated=$(exec_in_vault "cat /home/vault/.openclaw/openclaw.json" 2>/dev/null | \
@@ -379,20 +381,30 @@ audit_config() {
     echo "  Sandbox mode:     $sandbox_mode"
     echo "  Elevated access:  $elevated"
 
-    # Determine shell level by checking exec security + deny list contents
+    # Determine shell level by checking exec security, profile, and deny list.
+    # Hard Shell:  profile=minimal, exec.security=deny, group:fs in deny list
+    # Split Shell: profile=coding,  exec.security=allowlist, exec.ask=always,
+    #              browser/web/sessions denied, safeBins present
+    # Soft Shell:  not yet implemented
     local has_group_fs_denied
     has_group_fs_denied=$(exec_in_vault "grep -c 'group:fs' /home/vault/.openclaw/openclaw.json" 2>/dev/null || echo "0")
 
-    if [ "$exec_security" = "deny" ] && [ "$has_group_fs_denied" -gt 0 ]; then
+    local exec_ask
+    exec_ask=$(exec_in_vault "cat /home/vault/.openclaw/openclaw.json" 2>/dev/null | \
+        grep -o '"ask"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | \
+        grep -o '"[^"]*"$' | tr -d '"')
+
+    local has_browser_denied
+    has_browser_denied=$(exec_in_vault "grep -c '\"browser\"' /home/vault/.openclaw/openclaw.json" 2>/dev/null || echo "0")
+
+    if [ "$exec_security" = "deny" ] && [ "$tool_profile" = "minimal" ]; then
         ok "Shell level: HARD SHELL (maximum lockdown — exec denied, fs denied)"
-    elif [ "$exec_security" = "allowlist" ] && [ "$tool_profile" = "minimal" ]; then
-        ok "Shell level: SPLIT SHELL (controlled exec via safeBins + approval)"
-    elif [ "$exec_security" = "allowlist" ]; then
-        warn "Shell level: SOFT SHELL (broad access)"
+    elif [ "$exec_security" = "allowlist" ] && [ "$tool_profile" = "coding" ] && [ "$exec_ask" = "always" ] && [ "$has_browser_denied" -gt 0 ]; then
+        ok "Shell level: SPLIT SHELL (controlled exec via safeBins + approval, browser/web denied)"
     elif [ "$exec_security" = "deny" ]; then
         ok "Shell level: HARD SHELL (exec denied)"
     else
-        flag "Shell level: UNKNOWN — config does not match any expected shell"
+        flag "Shell level: UNKNOWN — config does not match Hard Shell or Split Shell. Soft Shell is not yet implemented."
     fi
 
     # Check critical settings
