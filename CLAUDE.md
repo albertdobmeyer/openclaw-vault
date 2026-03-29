@@ -172,13 +172,25 @@ Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabil
 
 ## Development Principles
 
-**This is a security-first repository.** The development process must embody the same rigor we demand of the runtime:
+**This is a zero-trust security project.** Our public claim is that anybody can use a clawbot securely on their private machine without ever risking leaks of private or sensitive data. Every line of code must uphold this promise.
 
+### Process
 - Work slowly and methodically — one task at a time
 - Always validate a change before moving to the next task
 - Read and understand existing code before modifying it
 - No batching or rushing — security-critical work deserves patience
 - When in doubt, stop and verify rather than assume
+
+### Research First
+- **Always consult OpenClaw's official documentation** before making assumptions about how OpenClaw works. We are wrapping their system — we must understand it accurately.
+- Do not guess at OpenClaw config syntax, tool behavior, or API formats — look it up or verify from source code
+- When official docs are insufficient, verify from the actual dist/ source bundles inside the container (see `docs/openclaw-internals.md` for methodology)
+
+### Spec-Driven Development
+- **Every new feature requires a written spec before implementation.** No exceptions.
+- Specs live in `docs/specs/` and must cover: purpose, security implications, implementation approach, and verification plan
+- The spec must be reviewed and approved before code is written
+- This applies to all changes that affect the security boundary: tool policy, safeBins, allowlist, container config, exec controls
 
 ## What NOT to Do
 
@@ -192,4 +204,4 @@ Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabil
 - Do not change `sandbox.mode` from `"off"` — the container IS the sandbox
 
 ---
-*Last updated: 2026-03-27 — Trifecta harmonization, Split Shell active*
+*Last updated: 2026-03-29 — Zero-trust mission, spec-driven development*
