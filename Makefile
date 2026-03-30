@@ -1,4 +1,4 @@
-.PHONY: help setup start stop kill nuclear verify network-report session-report
+.PHONY: help setup start stop kill nuclear verify network-report session-report log-rotate
 
 SHELL := /bin/bash
 
@@ -40,3 +40,6 @@ network-report: ## Analyze proxy logs for security anomalies
 
 session-report: ## Generate post-session summary of agent activity
 	@python3 monitoring/session-report.py
+
+log-rotate: ## Rotate proxy logs if over 10MB, check session transcript size
+	@bash scripts/log-rotate.sh
