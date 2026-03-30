@@ -1,4 +1,4 @@
-.PHONY: help setup start stop kill nuclear verify network-report session-report log-rotate
+.PHONY: help setup start stop kill nuclear verify test network-report session-report log-rotate
 
 SHELL := /bin/bash
 
@@ -32,8 +32,11 @@ kill: ## Force stop the vault container immediately
 nuclear: ## Remove all containers, images, and volumes — full reset
 	@bash scripts/kill.sh --nuclear
 
-verify: ## Run 15-point security verification checks
+verify: ## Run 18-point security verification checks
 	@bash scripts/verify.sh
+
+test: ## Run all test scripts in tests/
+	@bash scripts/run-tests.sh
 
 network-report: ## Analyze proxy logs for security anomalies
 	@python3 monitoring/network-log-parser.py
