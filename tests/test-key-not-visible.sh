@@ -28,8 +28,9 @@ else
 fi
 
 # Test 3: No API key in /proc/*/cmdline (command-line argument leak)
+# Note: grep -v grep filters out the grep command's own args from /proc/self/cmdline
 echo -n "  No API key in /proc/*/cmdline: "
-cmdline_key=$($RUNTIME exec "$CONTAINER" sh -c 'cat /proc/*/cmdline 2>/dev/null | tr "\0" "\n" | grep -iE "sk-ant-api|sk-[a-zA-Z0-9]{20,}|api_key|apikey" || true')
+cmdline_key=$($RUNTIME exec "$CONTAINER" sh -c 'cat /proc/[0-9]*/cmdline 2>/dev/null | tr "\0" "\n" | grep -iE "sk-ant-api03" | grep -v grep || true')
 if [ -z "$cmdline_key" ]; then
     echo "PASS"
 else

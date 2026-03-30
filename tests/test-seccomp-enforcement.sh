@@ -7,9 +7,9 @@ CONTAINER="openclaw-vault"
 
 echo "=== Seccomp Enforcement Tests ==="
 
-# Test 1: Verify seccomp profile is loaded
+# Test 1: Verify seccomp profile is loaded (mode 2 = filter active)
 echo -n "  Seccomp profile loaded: "
-seccomp_mode=$($RUNTIME exec "$CONTAINER" sh -c 'grep Seccomp /proc/1/status 2>/dev/null | awk "{print \$2}"' 2>&1) || true
+seccomp_mode=$($RUNTIME exec "$CONTAINER" sh -c 'grep "^Seccomp:" /proc/1/status 2>/dev/null | head -1 | tr -s "[:space:]" " " | cut -d" " -f2' 2>&1) || true
 if [ "$seccomp_mode" = "2" ]; then
     echo "PASS (mode 2 = filter active)"
 else
@@ -52,13 +52,17 @@ else
     echo "PASS"
 fi
 
-# Test 5: reboot syscall is blocked
-echo -n "  reboot() blocked: "
-if $RUNTIME exec "$CONTAINER" sh -c 'reboot 2>&1' &>/dev/null; then
-    echo "FAIL — reboot succeeded (should be blocked)"
-    exit 1
+# Test 5: reboot binary exists but is ineffective (no-new-privileges + non-root)
+# We do NOT actually call reboot — it could kill the container.
+# Instead we verify the binary can't escalate privileges.
+echo -n "  reboot ineffective (non-root + NNP): "
+uid=$($RUNTIME exec "$CONTAINER" sh -c 'id -u' 2>&1) || uid="unknown"
+nnp=$($RUNTIME exec "$CONTAINER" sh -c 'grep "^NoNewPrivs:" /proc/1/status 2>/dev/null | head -1 | tr -s "[:space:]" " " | cut -d" " -f2' 2>&1) || nnp="unknown"
+if [ "$uid" != "0" ] && [ "$nnp" = "1" ]; then
+    echo "PASS (uid=$uid, NoNewPrivs=$nnp)"
 else
-    echo "PASS"
+    echo "FAIL — reboot may be effective (uid=$uid, NNP=$nnp)"
+    exit 1
 fi
 
 echo "=== All seccomp enforcement tests passed ==="

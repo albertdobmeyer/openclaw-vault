@@ -25,13 +25,17 @@ else
     echo "PASS"
 fi
 
-# Test 3: /proc/kcore not readable
+# Test 3: /proc/kcore not readable (real content)
+# On Podman rootless, /proc/kcore may exist as a zero-length file.
+# We check for actual readable content, not just file existence.
 echo -n "  /proc/kcore not readable: "
-if $RUNTIME exec "$CONTAINER" sh -c 'head -c 1 /proc/kcore 2>&1' &>/dev/null; then
-    echo "FAIL — /proc/kcore is readable (kernel memory exposed)"
-    exit 1
+kcore_size=$($RUNTIME exec "$CONTAINER" sh -c 'stat -c %s /proc/kcore 2>/dev/null || echo 0' 2>&1) || kcore_size="0"
+kcore_read=$($RUNTIME exec "$CONTAINER" sh -c 'head -c 4 /proc/kcore 2>/dev/null | wc -c' 2>&1) || kcore_read="0"
+if [ "$kcore_read" = "0" ] || [ "$kcore_size" = "0" ]; then
+    echo "PASS (empty or unreadable)"
 else
-    echo "PASS"
+    echo "FAIL — /proc/kcore has readable content ($kcore_read bytes read)"
+    exit 1
 fi
 
 # Test 4: No dangerous symlinks to host paths

@@ -32,8 +32,19 @@ if ! $RUNTIME inspect openclaw-vault --format '{{.State.Status}}' 2>/dev/null | 
     exit 1
 fi
 
-# Find all test scripts
+# Find all test scripts, excluding destructive tests by default.
+# test-kill-switch.sh destroys containers — run it manually or with --include-destructive.
+INCLUDE_DESTRUCTIVE=false
+if [ "${1:-}" = "--include-destructive" ]; then
+    INCLUDE_DESTRUCTIVE=true
+fi
+
 test_files=$(find "$VAULT_DIR/tests" -name "test-*.sh" -type f | sort)
+if ! $INCLUDE_DESTRUCTIVE; then
+    test_files=$(echo "$test_files" | grep -v "test-kill-switch")
+    echo "(Skipping destructive tests. Use --include-destructive to include.)"
+    echo ""
+fi
 total=$(echo "$test_files" | wc -l)
 passed=0
 failed=0
