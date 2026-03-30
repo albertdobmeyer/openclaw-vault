@@ -4,6 +4,10 @@
 #
 # The vault-proxy BLOCKS all traffic to domains not listed here.
 # Add domains only if you understand why OpenClaw needs them.
+#
+# This allowlist is shared by Hard Shell and Split Shell (intentional).
+# Both shells need only LLM API + Telegram — no additional domains.
+# Soft Shell may require additional domains (see docs/roadmap.md Phase 4).
 
 # --- LLM API providers ---
 api.anthropic.com
