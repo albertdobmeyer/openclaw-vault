@@ -310,15 +310,41 @@ print('ok')
         SKIP=$((SKIP + 1))
     fi
 
-    # Check 23: Risk score report (informational — not pass/fail)
-    printf "  [%2d] %-50s " 23 "Risk score"
+    # Check 23: Risk score within expected range for detected shell level
+    printf "  [%2d] %-50s " 23 "Risk score within expected range"
     MANIFEST="$(cd "$(dirname "$0")/.." && pwd)/config/tool-manifest.yml"
     CORE="$(cd "$(dirname "$0")/.." && pwd)/scripts/tool-control-core.py"
     if [ -f "$MANIFEST" ] && [ -f "$CORE" ]; then
         score=$(echo "$config_json" | python3 "$CORE" --manifest "$MANIFEST" --output status --status-json "$(echo "$config_json")" 2>/dev/null | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('risk_score', '?'))" 2>/dev/null) || score="?"
-        echo "INFO ($score)"
+        if [ "$score" = "?" ]; then
+            echo "FAIL (could not compute)"
+            FAIL=$((FAIL + 1))
+        elif [ "$SHELL_LEVEL" = "HARD" ]; then
+            # Hard Shell: risk score must be 0.0
+            if python3 -c "assert float('$score') == 0.0" 2>/dev/null; then
+                echo "PASS (score=$score, expected 0.0 for Hard Shell)"
+                PASS=$((PASS + 1))
+            else
+                echo "FAIL (score=$score, expected 0.0 for Hard Shell)"
+                FAIL=$((FAIL + 1))
+            fi
+        elif [ "$SHELL_LEVEL" = "SPLIT" ]; then
+            # Split Shell: risk score should be in 0.1-0.3 range
+            if python3 -c "assert 0.0 < float('$score') <= 0.35" 2>/dev/null; then
+                echo "PASS (score=$score, expected 0.1-0.35 for Split Shell)"
+                PASS=$((PASS + 1))
+            else
+                echo "FAIL (score=$score, outside expected range for Split Shell)"
+                FAIL=$((FAIL + 1))
+            fi
+        else
+            # Unknown shell: just report the score, don't fail
+            echo "PASS (score=$score, shell level unknown — no range check)"
+            PASS=$((PASS + 1))
+        fi
     else
         echo "SKIP (manifest or core not found)"
+        SKIP=$((SKIP + 1))
     fi
 
 else
