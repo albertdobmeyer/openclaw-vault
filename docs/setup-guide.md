@@ -174,7 +174,7 @@ Run the security check to confirm everything is locked down:
 bash scripts/verify.sh
 ```
 
-You should see **15/15 checks passed**. This confirms:
+You should see **23/23 checks passed**. This confirms:
 - The agent cannot access your files
 - The agent cannot reach unauthorized websites
 - Your API key is not visible to the agent

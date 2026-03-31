@@ -133,7 +133,7 @@ bash scripts/setup.sh        # Linux / macOS
 .\scripts\setup.ps1          # Windows PowerShell
 ```
 
-Detects your runtime, prompts for your API key, builds the hardened image, starts the stack, runs 15 security checks. Five minutes.
+Detects your runtime, prompts for your API key, builds the hardened image, starts the stack, runs 23 security checks. Five minutes.
 
 ### Path B: Docker Desktop Sandbox Plugin (simpler, weaker)
 
@@ -166,7 +166,7 @@ podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl
 # Live container logs
 podman compose logs -f
 
-# Re-run the 15-point security check
+# Re-run the 23-point security check
 bash scripts/verify.sh
 ```
 
@@ -201,7 +201,7 @@ bash scripts/verify.sh
 ```
 
 <!-- TODO: capture terminal screenshot on next live deployment -->
-<!-- <p align="center"><img src="docs/verify-output.png" alt="15-point security verification — all PASS" width="700"/></p> -->
+<!-- <p align="center"><img src="docs/verify-output.png" alt="23-point security verification — all PASS" width="700"/></p> -->
 
 | # | Check | What it proves |
 |---|-------|---------------|
@@ -293,7 +293,7 @@ openclaw-vault/
 ├── scripts/
 │   ├── setup.sh / setup.ps1     # One-command setup
 │   ├── kill.sh / kill.ps1       # Three-level kill switch
-│   ├── verify.sh                # 15-point security verification
+│   ├── verify.sh                # 23-point security verification
 │   ├── docker-sandbox-setup.sh  # Path B alternative
 │   └── entrypoint.sh            # CA cert wait + exec wrapper
 ├── phase2-vm-isolation/         # [Planned] WSL2/Hyper-V layer

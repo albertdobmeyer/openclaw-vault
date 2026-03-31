@@ -105,7 +105,7 @@ openclaw-vault/
 │   ├── setup.sh / setup.ps1        One-command setup
 │   ├── kill.sh / kill.ps1          Three-level kill switch
 │   ├── switch-shell.sh             DEPRECATED — use tool-control.sh instead
-│   └── verify.sh                   15-point security verification
+│   └── verify.sh                   23-point security verification
 ├── monitoring/                     [Stubs] Skill scanner, log parser
 ├── tests/                          Isolation verification tests
 └── docs/
@@ -179,8 +179,10 @@ openclaw-vault/
 5. **Exec controls** — security: allowlist, ask: always, safeBins whitelist (Split Shell)
 6. **Hardening config** — DM pairing, no persistence, telemetry disabled
 
-### 15-Point Verification (verify.sh)
-Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabilities dropped, no host mounts, no Windows interop, API keys absent from env, no docker socket, no sudo, non-root user, seccomp loaded, noexec /tmp, no-new-privileges, PID limit, exec security = deny.
+### 23-Point Verification (verify.sh)
+- **Checks 1-14:** Universal exoskeleton — proxy DNS, TCP, read-only root, caps dropped, no host mounts, no interop, API key isolation, no Docker socket, no sudo, non-root, seccomp, noexec, no-new-privileges, PID limit
+- **Checks 15-18:** Shell-specific config — adapts to detected shell level (Hard: profile=minimal, exec=deny; Split: profile=coding, exec=allowlist+always, safeBins match profiles)
+- **Checks 19-23:** Per-tool security — NEVER-enable tools denied, rm not in safeBins, no interpreters in safeBins, proxy allowlist verified, risk score within expected range
 
 ## Development Principles
 
