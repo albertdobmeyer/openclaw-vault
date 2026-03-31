@@ -1,13 +1,32 @@
 #!/usr/bin/env bash
-# OpenClaw-Vault: Shell Switching (Molt)
+# DEPRECATED: Use tool-control.sh instead.
 #
-# Switches between shell levels by swapping the OpenClaw config
-# and restarting the container stack.
+# This script is replaced by the tool control system which provides:
+# - Per-tool whitelisting/blacklisting (not just shell presets)
+# - NEVER-enable enforcement (gateway, nodes, bash cannot be enabled)
+# - Risk assessment with injection vectors
+# - 23-point security verification after apply
 #
-# Usage: bash scripts/switch-shell.sh <hard|split|soft>
-#
-# Each switch runs a pre-audit (what's the current state?) and
-# post-audit (verify the new state is correct).
+# Usage (new):
+#   make hard-shell                    # or: bash scripts/tool-control.sh --preset hard --apply
+#   make split-shell                   # or: bash scripts/tool-control.sh --preset split --apply
+#   make tools-status                  # see what's enabled
+#   bash scripts/tool-control.sh --help
+
+echo ""
+echo "DEPRECATED: switch-shell.sh has been replaced by tool-control.sh"
+echo ""
+echo "  Use instead:"
+echo "    make hard-shell     Switch to Hard Shell (maximum lockdown)"
+echo "    make split-shell    Switch to Split Shell (workspace I/O with approval)"
+echo "    make tools-status   Show current tool status"
+echo ""
+echo "  The tool-control system provides per-tool whitelisting/blacklisting,"
+echo "  NEVER-enable enforcement, and risk assessment."
+echo ""
+exit 1
+
+# --- Original script below (kept for reference, never reached) ---
 
 set -uo pipefail
 
