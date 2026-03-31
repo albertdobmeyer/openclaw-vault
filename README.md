@@ -200,13 +200,12 @@ bash scripts/kill.sh --nuclear  # terminate WSL distro / VM (Phase 2)
 bash scripts/verify.sh
 ```
 
-<!-- TODO: capture terminal screenshot on next live deployment -->
-<!-- <p align="center"><img src="docs/verify-output.png" alt="23-point security verification — all PASS" width="700"/></p> -->
+**Checks 1-14: Universal exoskeleton** (same for all shell levels)
 
 | # | Check | What it proves |
 |---|-------|---------------|
-| 1 | Proxy reachable | Network routing through sidecar works |
-| 2 | Blocked domains return 403 | Allowlist enforcement active |
+| 1 | Proxy DNS resolves | Network routing through sidecar works |
+| 2 | Proxy TCP connects | Proxy is accepting connections |
 | 3 | Root filesystem read-only | Can't persist malware to image |
 | 4 | Capabilities dropped | No raw sockets, no privilege escalation |
 | 5 | Host mounts not accessible | Container can't read your files |
@@ -218,8 +217,26 @@ bash scripts/verify.sh
 | 11 | Seccomp profile loaded | Custom syscall filter active |
 | 12 | Noexec on /tmp | Can't execute dropped payloads |
 | 13 | No-new-privileges set | Setuid binaries can't escalate |
-| 14 | PID limit active | Fork bombs contained at 256 |
-| 15 | Config: approval mode | Confirms `mode: always` is set in active config |
+| 14 | PID limit active | Fork bombs contained |
+
+**Checks 15-18: Shell-specific** (adapts to detected Hard Shell or Split Shell)
+
+| # | Check | What it proves |
+|---|-------|---------------|
+| 15 | Profile matches shell level | Correct tool baseline for detected shell |
+| 16 | Exec security matches shell | Deny (Hard) or allowlist+always (Split) |
+| 17 | Host + elevated correct | Gateway exec, elevated permanently disabled |
+| 18 | SafeBins match profiles | No orphaned safeBins (silent drops prevented) |
+
+**Checks 19-23: Per-tool security** (zero-trust enforcement)
+
+| # | Check | What it proves |
+|---|-------|---------------|
+| 19 | NEVER-enable tools denied | gateway, nodes, bash always in deny list |
+| 20 | rm not in safeBins | Agent is constructive only — no deletion |
+| 21 | No interpreters in safeBins | sh, bash, node, python blocked |
+| 22 | Proxy allowlist clean | Only expected domains, nothing extra |
+| 23 | Risk score in range | Score matches expected range for shell level |
 
 ---
 
