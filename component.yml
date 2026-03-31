@@ -165,6 +165,49 @@ commands:
     sort_order: 30
     timeout_seconds: 0
 
+  - id: tools-status
+    name: Tool Status
+    description: Show which tools are currently enabled or disabled
+    group: monitoring
+    type: query
+    danger: safe
+    command: make tools-status
+    output:
+      format: ansi
+      display: terminal
+    available_when: [running]
+    sort_order: 15
+    timeout_seconds: 30
+
+  # Tool Control
+  - id: hard-shell
+    name: Hard Shell
+    description: Switch to maximum lockdown — conversation only
+    group: lifecycle
+    type: action
+    danger: caution
+    command: make hard-shell
+    output:
+      format: ansi
+      display: terminal
+    available_when: [running, stopped]
+    sort_order: 55
+    timeout_seconds: 180
+
+  - id: split-shell
+    name: Split Shell
+    description: Switch to workspace I/O with controlled exec and approval
+    group: lifecycle
+    type: action
+    danger: caution
+    command: make split-shell
+    output:
+      format: ansi
+      display: terminal
+    available_when: [running, stopped]
+    sort_order: 56
+    timeout_seconds: 180
+
 configs:
   - path: .env
     name: Environment Variables
@@ -211,6 +254,13 @@ configs:
           description: Messaging channel configuration (Telegram, WhatsApp)
     restart_required: true
     restart_command: soft-stop
+
+  - path: config/tool-manifest.yml
+    name: Tool Manifest
+    description: Source of truth for all tools — risk levels, injection vectors, requirements
+    format: yaml
+    editable: false
+    danger: destructive
 
 prerequisites:
   container_runtime: true

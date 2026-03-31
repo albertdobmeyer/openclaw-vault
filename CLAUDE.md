@@ -85,7 +85,10 @@ openclaw-vault/
 ├── .env.example                    API key + bot token template (gitignored)
 ├── component.yml                   MANIFEST — Lobster-TrApp contract
 ├── config/
-│   ├── openclaw-hardening.json5    Agent config (JSON5, current shell level)
+│   ├── tool-manifest.yml           Source of truth — all tools, risk, injection vectors
+│   ├── openclaw-hardening.json5    Agent config (JSON5, baked into image)
+│   ├── hard-shell.json5            Hard Shell preset config
+│   ├── split-shell.json5           Split Shell preset config
 │   ├── hard-shell-allowlist.txt    Hard Shell domain template
 │   ├── vault-seccomp.json          Syscall filter (vault container)
 │   └── vault-proxy-seccomp.json    Syscall filter (proxy container)
@@ -97,9 +100,11 @@ openclaw-vault/
 ├── scripts/
 │   ├── entrypoint.sh               Container startup (config + CA cert + auth)
 │   ├── proxy-bootstrap.mjs         Global undici proxy dispatcher
+│   ├── tool-control.sh              Per-tool whitelisting/blacklisting (replaces switch-shell.sh)
+│   ├── tool-control-core.py        Config generator core (python3, called by tool-control.sh)
 │   ├── setup.sh / setup.ps1        One-command setup
 │   ├── kill.sh / kill.ps1          Three-level kill switch
-│   ├── switch-shell.sh             Shell level switching (Hard + Split implemented)
+│   ├── switch-shell.sh             DEPRECATED — use tool-control.sh instead
 │   └── verify.sh                   15-point security verification
 ├── monitoring/                     [Stubs] Skill scanner, log parser
 ├── tests/                          Isolation verification tests
@@ -139,7 +144,14 @@ openclaw-vault/
 | `soft-stop` | `make stop` | safe | Graceful container stop |
 | `hard-kill` | `make kill` | caution | Force stop immediately |
 | `nuclear-kill` | `make nuclear` | destructive | Remove everything |
-| `verify` | `make verify` | safe | 15-point security check |
+| `verify` | `make verify` | safe | 23-point security check |
+| `test` | `make test` | safe | Run all test scripts |
+| `tools-status` | `make tools-status` | safe | Show per-tool enabled/disabled status |
+| `hard-shell` | `make hard-shell` | caution | Switch to Hard Shell preset |
+| `split-shell` | `make split-shell` | caution | Switch to Split Shell preset |
+| `network-report` | `make network-report` | safe | Analyze proxy logs for anomalies |
+| `session-report` | `make session-report` | safe | Post-session activity summary |
+| `log-rotate` | `make log-rotate` | safe | Rotate proxy logs, check transcript size |
 | `logs` | `podman logs -f openclaw-vault` | safe | Stream vault logs |
 | `proxy-logs` | `podman logs -f vault-proxy` | safe | Stream proxy logs |
 
@@ -212,4 +224,4 @@ Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabil
 - Do not give the agent any destructive capabilities — the agent is constructive only (read, write, create, search); all destructive operations are handled by the user or Claude from the host side
 
 ---
-*Last updated: 2026-03-30 — Air-gap architecture, constructive-only agent*
+*Last updated: 2026-03-30 — Tool control system, per-tool whitelisting*

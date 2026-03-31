@@ -1,7 +1,7 @@
 # OpenClaw-Vault Roadmap
 
-**Updated:** 2026-03-27
-**Current state:** Hard Shell and Split Shell working. Hum communicates via Telegram, has persistent memory, can execute file commands with user approval.
+**Updated:** 2026-03-30
+**Current state:** Tool control system operational. Per-tool whitelisting/blacklisting with 23-point verification. Hard Shell and Split Shell presets. Monitoring tools (network, session, audit, log rotation) all implemented.
 **Cross-reference:** See `docs/trifecta.md` in the lobster-trapp root for how this module fits with clawhub-forge and moltbook-pioneer.
 
 ---

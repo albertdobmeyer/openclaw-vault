@@ -30,6 +30,10 @@ Not blocking anything — these are aspirational.
 
 ## Resolved
 
+- [x] Tool control system — Per-tool whitelisting/blacklisting with manifest, generator, 23-point verify (2026-03-30)
+- [x] rm removed from safeBins — Drift bug fixed, agent is constructive only (2026-03-30)
+- [x] askFallback removed — Documented in official docs but rejected by OpenClaw 2026.2.26 Zod schema (2026-03-30)
+- [x] Test scripts fixed — 12/12 pass (was 5/12), seccomp/escape/config tests rewritten (2026-03-30)
 - [x] `monitoring/skill-scanner.sh` — Removed (2026-03-27). Skill scanning lives in clawhub-forge.
 - [x] Gear → Shell terminology — Migrated across all docs and configs (2026-03-27).
 - [x] `component.yml` config paths — Fixed: `allowlist.txt` → `proxy/allowlist.txt`, `openclaw-hardening.yml` → `config/openclaw-hardening.json5` (2026-03-27).
