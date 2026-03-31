@@ -91,14 +91,15 @@
       // With ask: "always", these STILL require user approval — safeBins just means
       // the command won't be rejected before reaching the approval step.
       //
-      // ONLY file manipulation commands. No interpreters. No network tools.
+      // ONLY constructive file commands. No interpreters. No network tools.
+      // NEVER add: rm (destructive — user-side only), chmod/chown (permission manipulation),
+      //            sh/bash/node/python (interpreters), curl/wget (network tools)
       safeBins: [
-        "cat",       // Read/write file contents
+        "cat",       // Read file contents
         "echo",      // Write text to files
         "mkdir",     // Create directories
         "cp",        // Copy files
         "mv",        // Move/rename files
-        "rm",        // Remove files (within workspace only — workspaceOnly enforced)
         "touch",     // Create empty files
         "date",      // Get current date/time (for timestamped notes)
         "head",      // Read first N lines
@@ -122,7 +123,6 @@
         mkdir: {},
         cp: {},
         mv: {},
-        rm: {},
         touch: {},
         date: {},
         head: {},

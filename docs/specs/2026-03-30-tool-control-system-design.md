@@ -332,12 +332,25 @@ Shell levels are pre-defined tool selections — convenience shortcuts on the sl
 
 **Soft Shell (0.7-0.9):** Profile: `full` minus driver seat. Broad exec with curated safeBins. Broad domain allowlist. Approval only for destructive actions.
 
+### The Air-Gap Principle: Constructive vs Destructive
+
+The vault air-gaps the OpenClaw agent from the user's computer. The division:
+
+**Agent side (constructive only):** read, write, create, search, analyze. The agent can build and propose, but never destroy.
+
+**User side (destructive + admin):** delete, modify system, change permissions, manage tool access, review audits. Claude Code and the Lobster-TrApp GUI handle these from outside the container.
+
+If Hum needs something deleted, it asks the user via Telegram. The user or Claude handles it from the host.
+
 ### NEVER Enabled (In Any Shell Level)
 
-These tools are permanently denied, regardless of user choice:
-- `gateway` — agent cannot modify itself
+These tools/operations are permanently denied, regardless of user choice:
+- `gateway` — agent cannot modify itself or its own security config
 - `sessions_spawn` — no autonomous sub-agents (Split Shell and below)
 - `nodes` — no device access
+- `rm` — agent cannot delete files (destructive operation — user-side only)
+- Root/system modification — read-only root filesystem, no caps, no sudo
+- `chmod` / `chown` — agent cannot change file permissions (never in safeBins)
 
 ### Protected Resources (Driver Seat)
 

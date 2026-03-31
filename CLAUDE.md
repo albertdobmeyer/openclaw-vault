@@ -206,7 +206,10 @@ Validates: proxy DNS resolution, proxy TCP connectivity, read-only root, capabil
 - Do not modify allowlist.txt to include ClawHub domains (11.9% malware rate)
 - Do not set `tools.elevated.enabled: true` — permanently disabled
 - Do not add interpreters (node, sh, python) to `tools.exec.safeBins`
+- Do not add destructive commands (rm, rmdir) to `tools.exec.safeBins` — deletion is user-side only
+- Do not add permission tools (chmod, chown) to `tools.exec.safeBins`
 - Do not change `sandbox.mode` from `"off"` — the container IS the sandbox
+- Do not give the agent any destructive capabilities — the agent is constructive only (read, write, create, search); all destructive operations are handled by the user or Claude from the host side
 
 ---
-*Last updated: 2026-03-30 — Security model, no trust jumps, injection vectors*
+*Last updated: 2026-03-30 — Air-gap architecture, constructive-only agent*
