@@ -93,7 +93,6 @@
         "mkdir",     // Create directories
         "cp",        // Copy files
         "mv",        // Move/rename files
-        "rm",        // Remove files (within workspace only — workspaceOnly enforced)
         "touch",     // Create empty files
         "date",      // Get current date/time (for timestamped notes)
         "head",      // Read first N lines
@@ -117,7 +116,6 @@
         mkdir: {},
         cp: {},
         mv: {},
-        rm: {},
         touch: {},
         date: {},
         head: {},
