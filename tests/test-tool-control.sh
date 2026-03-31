@@ -163,6 +163,9 @@ check_fail "gateway cannot be enabled" \
 check_fail "nodes cannot be enabled" \
     python3 "$CORE" --manifest "$MANIFEST" --preset split --enable nodes --output config
 
+check_fail "bash cannot be enabled" \
+    python3 "$CORE" --manifest "$MANIFEST" --preset split --enable bash --output config
+
 check_fail "Unknown tool rejected" \
     python3 "$CORE" --manifest "$MANIFEST" --preset split --enable nonexistent_tool --output config
 echo ""
@@ -277,6 +280,18 @@ check "nodes in never_enable" python3 -c "
 import yaml
 m = yaml.safe_load(open('$MANIFEST'))
 assert 'nodes' in m['never_enable']
+"
+
+check "bash in never_enable" python3 -c "
+import yaml
+m = yaml.safe_load(open('$MANIFEST'))
+assert 'bash' in m['never_enable']
+"
+
+check "bash in deny list (split preset)" python3 -c "
+import json
+c = json.loads('''$(python3 "$CORE" --manifest "$MANIFEST" --preset split --output config 2>&1)''')
+assert 'bash' in c['tools']['deny'], 'bash not in deny list'
 "
 echo ""
 

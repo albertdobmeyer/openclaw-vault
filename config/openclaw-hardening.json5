@@ -63,6 +63,7 @@
       "cron",               // No scheduled tasks
       "canvas",             // No visual workspace
       "nodes",              // No device control
+      "bash",               // Distinct from exec in group:runtime — always denied
       "process",            // No background processes
     ],
 

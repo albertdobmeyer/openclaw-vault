@@ -20,6 +20,7 @@ version: 1
 never_enable:
   - gateway         # Agent cannot modify its own config or security settings
   - nodes           # No device access (camera, contacts, SMS, location)
+  - bash            # Distinct from exec in group:runtime — always denied
 
 # --- NEVER-SAFEBINS ---
 # These binaries are never added to safeBins regardless of user input.
@@ -264,6 +265,19 @@ tools:
       - "Command injection via argument manipulation"
       - "Pipeline chaining (;, &&, ||) to bypass safeBins"
       - "Inline eval (python -c, node -e) if not restricted"
+
+  bash:
+    risk: critical
+    risk_score: 0.05
+    group: runtime
+    description: "Run shell commands via bash (distinct from exec per official docs)"
+    requires_profile: never
+    requires_exec: false
+    extra_domains: []
+    injection_vectors:
+      - "Arbitrary code execution — same risk as exec"
+      - "May bypass exec deny if not explicitly denied"
+      - "Distinct tool from exec in OpenClaw's group:runtime"
 
   process:
     risk: critical

@@ -60,6 +60,7 @@
       "sessions_spawn",     // Explicit: no sub-agent spawning
       "sessions_send",      // Explicit: no cross-session messaging
       "gateway",            // Cannot modify its own gateway
+      "bash",               // Distinct from exec in group:runtime — always denied
       "cron",               // No scheduled tasks
       "canvas",             // No visual workspace
       "nodes",              // No device control

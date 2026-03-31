@@ -40,6 +40,7 @@
       "gateway",
       "cron",
       "exec",
+      "bash",
       "process",
       "browser",
     ],
