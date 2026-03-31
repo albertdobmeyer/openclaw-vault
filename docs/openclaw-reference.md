@@ -289,7 +289,7 @@ In Split Shell mode, the persistent volume preserves:
 | Exec security | `allowlist` | Only safeBins-approved commands execute |
 | Exec ask | `always` | Every command requires Telegram approval |
 | Exec host | `gateway` | Commands run inside the container (not Docker sandbox) |
-| safeBins | 17 commands | cat, echo, mkdir, cp, mv, rm, touch, date, head, tail, wc, sort, uniq, tr, cut, jq, tee |
+| safeBins | 16 commands | cat, echo, mkdir, cp, mv, touch, date, head, tail, wc, sort, uniq, tr, cut, jq, tee (rm removed — agent is constructive only) |
 | Deny list | browser, web_search, web_fetch, group:automation, group:sessions, sessions_spawn, sessions_send, gateway, cron, canvas, nodes, process | No web, no cron, no sub-agents |
 | Storage | Volume (persistent) | Memory and identity survive restarts |
 | Domains | 3 (same as Hard Shell) | No additional network access |

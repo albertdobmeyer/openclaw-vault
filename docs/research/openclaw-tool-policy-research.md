@@ -80,9 +80,11 @@ Our config uses `host: "gateway"` — correct, since sandbox.mode is "off".
 
 **Default safeBins (built into OpenClaw):** `cut`, `uniq`, `head`, `tail`, `tr`, `wc`
 
-**Our safeBins (17 total):** cat, echo, mkdir, cp, mv, rm, touch, date, head, tail, wc, sort, uniq, tr, cut, jq, tee
+**Our safeBins (16 total):** cat, echo, mkdir, cp, mv, touch, date, head, tail, wc, sort, uniq, tr, cut, jq, tee
 
-**CONCERN:** The official docs say safeBins are for "stdin-only" binaries. But we have `mkdir`, `cp`, `mv`, `rm`, `touch` which take file path arguments. The official default safeBins (cut, uniq, head, tail, tr, wc) are all stdin filters. Our additions may not behave as expected with the safeBins path validation. Needs live testing.
+*Note: `rm` was removed (2026-03-30) — the agent is constructive only. All destructive operations are user-side.*
+
+**CONCERN:** The official docs say safeBins are for "stdin-only" binaries. But we have `mkdir`, `cp`, `mv`, `touch` which take file path arguments. The official default safeBins (cut, uniq, head, tail, tr, wc) are all stdin filters. Our additions may not behave as expected with the safeBins path validation. Needs live testing.
 
 ## 7. safeBinProfiles (Official — CONFIRMED)
 
