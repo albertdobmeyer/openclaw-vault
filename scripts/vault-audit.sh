@@ -141,10 +141,28 @@ audit_changes() {
     echo ""
     echo "  Changes:"
 
+    # Create a reference file inside the container with the last audit timestamp.
+    # This avoids depending on AGENTS.md which may not exist.
+    local ref_created=false
+    if [ "$last_audit" != "1970-01-01" ]; then
+        exec_in_vault "touch -d '$last_audit' /tmp/.audit-ref 2>/dev/null" && ref_created=true
+    fi
+
     local changes
-    changes=$(exec_in_vault "find /home/vault/.openclaw/workspace/ -type f -newer /home/vault/.openclaw/workspace/AGENTS.md 2>/dev/null")
+    if $ref_created; then
+        changes=$(exec_in_vault "find /home/vault/.openclaw/workspace/ -type f -newer /tmp/.audit-ref 2>/dev/null")
+    else
+        # First audit or no reference — list all workspace files
+        changes=$(exec_in_vault "find /home/vault/.openclaw/workspace/ -type f 2>/dev/null")
+    fi
+
+    # Clean up reference file
+    if $ref_created; then
+        exec_in_vault "rm -f /tmp/.audit-ref 2>/dev/null" || true
+    fi
+
     if [ -z "$changes" ]; then
-        ok "No files modified since AGENTS.md was created (baseline)"
+        ok "No files modified since last audit"
     else
         echo "$changes" | while read -r f; do
             local size
