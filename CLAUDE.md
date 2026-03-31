@@ -142,7 +142,7 @@ openclaw-vault/
 | `setup` | `make setup` | caution | Build container environment |
 | `start` | `make start` | safe | Start vault + proxy |
 | `soft-stop` | `make stop` | safe | Graceful container stop |
-| `hard-kill` | `make kill` | caution | Force stop immediately |
+| `hard-kill` | `make kill` | destructive | Force stop, remove containers + volumes |
 | `nuclear-kill` | `make nuclear` | destructive | Remove everything |
 | `verify` | `make verify` | safe | 23-point security check |
 | `test` | `make test` | safe | Run all test scripts |
