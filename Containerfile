@@ -67,6 +67,15 @@ ENV HTTP_PROXY=http://vault-proxy:8080 \
     NODE_EXTRA_CA_CERTS=/opt/proxy-ca/mitmproxy-ca-cert.pem \
     HOME=/home/vault
 
+# Strip destructive and ownership binaries — agent is constructive only.
+# rm/rmdir: no deletion from inside the container
+# chown/chgrp: no ownership manipulation
+# NOTE: chmod is KEPT — the entrypoint uses it to lock the config read-only.
+# These are Alpine busybox applets — remove the symlinks, not busybox itself.
+RUN rm -f /bin/rm /bin/rmdir /bin/chown /bin/chgrp \
+         /usr/bin/rm /usr/bin/rmdir /usr/bin/chown /usr/bin/chgrp 2>/dev/null; \
+    true
+
 # Run as non-root
 USER vault
 WORKDIR /home/vault/workspace
