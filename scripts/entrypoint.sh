@@ -5,7 +5,8 @@
 # 1. Install or preserve OpenClaw config
 # 2. Wait for mitmproxy CA cert
 # 3. Install or preserve auth profile
-# 4. Exec into OpenClaw
+# 4. Lock config read-only (prevent agent self-modification)
+# 5. Exec into OpenClaw
 
 CONFIG_SRC="/opt/openclaw-hardening.json5"
 CONFIG_DST="/home/vault/.openclaw/openclaw.json"
@@ -69,6 +70,23 @@ else
     echo "[vault] Auth profile preserved (persistent volume)"
 fi
 
-# --- 4. Start OpenClaw ---
+# --- 4. Lock config read-only ---
+# Prevent the agent from modifying its own security policy.
+# OpenClaw reads the config fine with 444 permissions (tested 2026-03-31).
+# The config is only writable during this entrypoint setup phase and via
+# tool-control.sh --apply (which restarts the container).
+#
+# Why this matters: if an attacker gains code execution inside the container
+# (bypassing tool policy), they could modify openclaw.json to disable deny
+# lists, enable elevated access, or set exec to "full". OpenClaw hot-reloads
+# config changes, so the escalation would take effect immediately.
+# chmod 444 prevents this — the vault user (uid 1000) cannot write to files
+# they don't have write permission on, and no-new-privileges + dropped
+# capabilities prevent escalation to root.
+chmod 444 "$CONFIG_DST" 2>/dev/null && \
+    echo "[vault] Config locked read-only (self-modification prevented)" || \
+    echo "[vault] WARNING: Could not lock config read-only"
+
+# --- 5. Start OpenClaw ---
 echo "[vault] Starting OpenClaw..."
 exec "$@"

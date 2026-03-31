@@ -46,3 +46,4 @@ build/
 *.png
 !docs/*.png
 .vault-audit-timestamp
+.vault-config-hash

@@ -232,6 +232,20 @@ do_apply() {
         exit 1
     }
 
+    # Store config integrity hash for tamper detection (verify.sh check #24)
+    echo "$config_json" | python3 -c "
+import sys, json, hashlib
+c = json.loads(sys.stdin.read())
+critical = json.dumps({
+    'profile': c.get('tools',{}).get('profile'),
+    'deny': sorted(c.get('tools',{}).get('deny',[])),
+    'exec': c.get('tools',{}).get('exec',{}),
+    'elevated': c.get('tools',{}).get('elevated',{}),
+}, sort_keys=True)
+print(hashlib.sha256(critical.encode()).hexdigest())
+" > "$VAULT_DIR/.vault-config-hash" 2>/dev/null
+    echo "[tool-control] Config integrity hash stored"
+
     # Step 2: Generate allowlist
     local allowlist
     allowlist=$(python3 "$CORE" --manifest "$MANIFEST" --preset "$preset" "${extra_args[@]}" --output allowlist 2>&1) || {

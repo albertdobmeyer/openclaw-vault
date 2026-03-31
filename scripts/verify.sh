@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# OpenClaw-Vault: Security Verification (23 checks)
+# OpenClaw-Vault: Security Verification (24 checks)
 #
 # Validates all security controls. Runs from the host (execs into container).
 # Shell-aware: detects Hard Shell or Split Shell and verifies config accordingly.
 #
 # Checks 1-14:  Universal exoskeleton checks (same for all shells)
 # Checks 15-18: Shell-specific config verification (adapts to detected level)
-# Checks 19-23: Per-tool security checks (NEVER-enable, rm, interpreters, allowlist, risk)
+# Checks 19-24: Per-tool security checks (NEVER-enable, rm, interpreters, allowlist, risk, integrity)
 #
 # Usage: bash scripts/verify.sh
 
@@ -351,6 +351,37 @@ print('ok')
         fi
     else
         echo "SKIP (manifest or core not found)"
+        SKIP=$((SKIP + 1))
+    fi
+
+    # Check 24: Config integrity — security-critical fields match stored hash
+    printf "  [%2d] %-50s " 24 "Config integrity (no tampering)"
+    VERIFY_VAULT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    hash_file="$VERIFY_VAULT_DIR/.vault-config-hash"
+    if [ -f "$hash_file" ]; then
+        stored_hash=$(cat "$hash_file")
+        current_hash=$(echo "$config_json" | python3 -c "
+import sys, json, hashlib
+c = json.loads(sys.stdin.read())
+critical = json.dumps({
+    'profile': c.get('tools',{}).get('profile'),
+    'deny': sorted(c.get('tools',{}).get('deny',[])),
+    'exec': c.get('tools',{}).get('exec',{}),
+    'elevated': c.get('tools',{}).get('elevated',{}),
+}, sort_keys=True)
+print(hashlib.sha256(critical.encode()).hexdigest())
+" 2>/dev/null)
+        if [ "$stored_hash" = "$current_hash" ]; then
+            echo "PASS (hash matches)"
+            PASS=$((PASS + 1))
+        else
+            echo "FAIL (config tampered — security fields changed since last apply)"
+            echo "       stored:  ${stored_hash:0:16}..."
+            echo "       current: ${current_hash:0:16}..."
+            FAIL=$((FAIL + 1))
+        fi
+    else
+        echo "SKIP (no stored hash — run 'make split-shell' or 'make hard-shell' first)"
         SKIP=$((SKIP + 1))
     fi
 
