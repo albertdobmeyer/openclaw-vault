@@ -1,4 +1,4 @@
-.PHONY: help setup start stop kill nuclear verify test network-report session-report log-rotate
+.PHONY: help setup start stop kill nuclear verify test network-report session-report log-rotate tools-status tools-dry-run hard-shell split-shell
 
 SHELL := /bin/bash
 
@@ -14,7 +14,7 @@ help: ## Show available commands
 	@echo "  runtime: $(RUNTIME)"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 setup: ## Build and configure the hardened container environment
@@ -32,11 +32,23 @@ kill: ## Force stop the vault container immediately
 nuclear: ## Remove all containers, images, and volumes — full reset
 	@bash scripts/kill.sh --nuclear
 
-verify: ## Run 18-point security verification checks
+verify: ## Run 23-point security verification checks
 	@bash scripts/verify.sh
 
 test: ## Run all test scripts in tests/
 	@bash scripts/run-tests.sh
+
+tools-status: ## Show which tools are currently enabled/disabled
+	@bash scripts/tool-control.sh --status
+
+tools-dry-run: ## Preview a tool config (PRESET=hard|split)
+	@bash scripts/tool-control.sh --preset $(PRESET) --dry-run
+
+hard-shell: ## Switch to Hard Shell preset (maximum lockdown)
+	@bash scripts/tool-control.sh --preset hard --apply
+
+split-shell: ## Switch to Split Shell preset (workspace I/O with approval)
+	@bash scripts/tool-control.sh --preset split --apply
 
 network-report: ## Analyze proxy logs for security anomalies
 	@python3 monitoring/network-log-parser.py
