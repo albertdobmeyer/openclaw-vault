@@ -277,28 +277,52 @@ These are not theoretical concerns — they are architectural realities of the O
 
 ```
 openclaw-vault/
-├── Containerfile                # Hardened image (multi-stage, stripped)
-├── compose.yml                  # Container + proxy orchestration
+├── Containerfile                     # Hardened image (multi-stage, stripped)
+├── compose.yml                       # Container + proxy orchestration
+├── Makefile                          # 17 make targets (setup, verify, test, tools-status, etc.)
+├── component.yml                     # Lobster-TrApp manifest contract
 ├── config/
-│   ├── openclaw-hardening.yml   # Locked-down OpenClaw agent config
-│   ├── vault-seccomp.json       # Custom syscall filter (vault)
-│   └── vault-proxy-seccomp.json # Custom syscall filter (proxy)
+│   ├── tool-manifest.yml             # Source of truth — all 26 tools, risk levels, injection vectors
+│   ├── openclaw-hardening.json5      # Active agent config (baked into image)
+│   ├── hard-shell.json5              # Hard Shell preset config
+│   ├── split-shell.json5             # Split Shell preset config
+│   ├── hard-shell-allowlist.txt      # Hard Shell domain template
+│   ├── vault-seccomp.json            # Custom syscall filter (vault container)
+│   └── vault-proxy-seccomp.json      # Custom syscall filter (proxy container)
 ├── docs/
-│   ├── architecture.svg         # Architecture diagram
-│   ├── definitions.md           # OpenClaw ecosystem terminology reference
-│   └── social-preview.png       # GitHub social preview image
+│   ├── openclaw-reference.md         # How OpenClaw works — tools, config, Telegram, sessions
+│   ├── openclaw-internals.md         # Source code analysis (verified from dist/ bundles)
+│   ├── roadmap.md                    # Phased development plan (all 5 phases complete)
+│   ├── setup-guide.md                # Non-technical user setup guide
+│   ├── definitions.md                # OpenClaw ecosystem terminology
+│   ├── phase1-findings.md            # Phase 1 compatibility test results
+│   ├── research/                     # Official docs research notes
+│   └── specs/                        # Feature specs (tool control, skill installation, etc.)
 ├── proxy/
-│   ├── vault-proxy.py           # Key injection + allowlist + logging
-│   └── allowlist.txt            # Editable domain allowlist
+│   ├── vault-proxy.py                # Key injection + domain allowlist + request logging
+│   └── allowlist.txt                 # Active domain allowlist (managed by tool-control)
 ├── scripts/
-│   ├── setup.sh / setup.ps1     # One-command setup
-│   ├── kill.sh / kill.ps1       # Three-level kill switch
-│   ├── verify.sh                # 23-point security verification
-│   ├── docker-sandbox-setup.sh  # Path B alternative
-│   └── entrypoint.sh            # CA cert wait + exec wrapper
-├── phase2-vm-isolation/         # [Planned] WSL2/Hyper-V layer
-├── monitoring/                  # [Stubs] Skill scanner, log parser, session report
-└── tests/                       # Isolation verification tests
+│   ├── tool-control.sh               # Per-tool whitelisting/blacklisting
+│   ├── tool-control-core.py          # Config generator core (python3)
+│   ├── verify.sh                     # 23-point security verification
+│   ├── vault-audit.sh                # Workspace audit (files, memory, network, tools, injection)
+│   ├── read-chat.sh                  # Read Telegram conversation from transcripts
+│   ├── install-skill.sh              # Install forge-vetted skills into workspace
+│   ├── run-tests.sh                  # Test runner (13 test scripts)
+│   ├── log-rotate.sh                 # Proxy log rotation + transcript size monitoring
+│   ├── setup.sh / setup.ps1          # One-command setup
+│   ├── kill.sh / kill.ps1            # Three-level kill switch
+│   ├── entrypoint.sh                 # Container startup (config + CA cert + auth)
+│   └── switch-shell.sh               # DEPRECATED — use tool-control.sh
+├── monitoring/
+│   ├── network-log-parser.py         # Proxy log anomaly detection
+│   └── session-report.py             # Post-session activity summary
+├── tests/                            # 13 test scripts (12 non-destructive + 1 kill-switch)
+│   ├── test-tool-control.sh          # 47 tests for config generation + security enforcement
+│   ├── test-config-integrity.sh      # Running config verification
+│   ├── test-network-isolation.sh     # Proxy and direct access tests
+│   └── ...                           # Capability, escape, filesystem, key, seccomp, etc.
+└── phase2-vm-isolation/              # [Planned] WSL2/Hyper-V isolation layer
 ```
 
 ---
