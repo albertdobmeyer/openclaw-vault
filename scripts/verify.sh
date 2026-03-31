@@ -213,6 +213,13 @@ print(f'CFG_BROWSER_DENIED={has_browser}')
         echo "       Shell level UNKNOWN — config does not match Hard or Split Shell"
         echo "       profile=$CFG_PROFILE exec.security=$CFG_EXEC_SEC exec.ask=$CFG_EXEC_ASK"
         FAIL=$((FAIL + 1))
+        # Checks 16-18 are shell-specific — skip them when shell is unknown
+        printf "  [%2d] %-50s SKIP (shell unknown)\n" 16 "Config: shell-specific check 1"
+        SKIP=$((SKIP + 1))
+        printf "  [%2d] %-50s SKIP (shell unknown)\n" 17 "Config: shell-specific check 2"
+        SKIP=$((SKIP + 1))
+        printf "  [%2d] %-50s SKIP (shell unknown)\n" 18 "Config: shell-specific check 3"
+        SKIP=$((SKIP + 1))
     fi
 fi
 
