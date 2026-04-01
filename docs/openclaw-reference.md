@@ -273,7 +273,7 @@ In Split Shell mode, the persistent volume preserves:
 
 | Setting | Value | Effect |
 |---|---|---|
-| Profile | `minimal` | Only messaging + read-only tools |
+| Profile | `minimal` | `session_status` only (messaging works via Telegram channel, not tool profile) |
 | Exec security | `deny` | All shell execution blocked |
 | Deny list | group:runtime, group:automation, group:fs, group:sessions, exec, process, browser | Maximum lockdown |
 | Storage | tmpfs (volatile) | Nothing persists across restarts |
@@ -296,9 +296,23 @@ In Split Shell mode, the persistent volume preserves:
 
 **What Hum can do:** Chat, remember things, take notes, manipulate files in workspace — all with user approval for every command.
 
-### Soft Shell (`config/soft-shell.json5`)
+### Soft Shell (`config/soft-shell.json5`) — The Safari
 
-**Not yet designed.** See `docs/roadmap.md` for planned capabilities.
+| Setting | Value | Effect |
+|---|---|---|
+| Profile | `coding` | Same base profile as Split Shell |
+| Exec security | `allowlist` | Only safeBins-approved commands execute |
+| Exec ask | `on-miss` | SafeBins auto-approve, unknowns require Telegram approval |
+| Exec host | `gateway` | Commands run inside the container |
+| safeBins | 26 commands | All Split Shell safeBins + grep, sed, awk, diff, xargs, basename, dirname, env, test, printf |
+| Enabled tools | 17 | All Split Shell tools + web_search, web_fetch, cron, process, canvas, message |
+| Deny list | gateway, bash, browser, group:sessions, nodes | The moat — agent self-modification, sub-agents, and device access permanently blocked |
+| Storage | Volume (persistent) | Memory and identity survive restarts |
+| Domains | 4 (base + raw.githubusercontent.com) | Read public GitHub repos |
+
+**What Hum can do:** Search the web, schedule tasks, process files, run text processing commands autonomously (safeBins auto-approve), send messages on authorized channels — all within the workspace boundary.
+
+**What Hum still cannot do:** Browse websites (browser denied by default), spawn sub-agents (sessions denied by default), modify its own security config, delete files, run interpreters, access the driver seat.
 
 ---
 

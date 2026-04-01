@@ -174,7 +174,7 @@ Run the security check to confirm everything is locked down:
 bash scripts/verify.sh
 ```
 
-You should see **23/23 checks passed**. This confirms:
+You should see **24/24 checks passed**. This confirms:
 - The agent cannot access your files
 - The agent cannot reach unauthorized websites
 - Your API key is not visible to the agent
@@ -338,4 +338,4 @@ Your API key is stored only in the proxy, never in the agent container. Even if 
 
 - **Explore the settings:** Check `config/openclaw-hardening.json5` to see the security configuration
 - **View proxy logs:** `podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl` shows every request the agent made
-- **Learn about shell levels:** The vault supports three security levels — Hard Shell (conversation only), Split Shell (file commands with approval), and Soft Shell (broader autonomy, coming soon). Switch with `bash scripts/switch-shell.sh`
+- **Learn about shell levels:** The vault supports three security levels — Hard Shell (conversation only), Split Shell (file commands with approval), and Soft Shell (the safari — web search, scheduling, autonomous file work). Switch with `make hard-shell`, `make split-shell`, or `make soft-shell`

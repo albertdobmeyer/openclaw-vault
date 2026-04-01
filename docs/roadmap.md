@@ -1,7 +1,7 @@
 # OpenClaw-Vault Roadmap
 
 **Updated:** 2026-03-30
-**Current state:** Tool control system operational. Per-tool whitelisting/blacklisting with 23-point verification. Hard Shell and Split Shell presets. Monitoring tools (network, session, audit, log rotation) all implemented.
+**Current state:** All three shell levels operational. Per-tool whitelisting/blacklisting with 24-point verification. Hard Shell, Split Shell, and Soft Shell presets. Monitoring tools (network, session, audit, log rotation) all implemented.
 **Cross-reference:** See `docs/trifecta.md` in the lobster-trapp root for how this module fits with clawhub-forge and moltbook-pioneer.
 
 ---
@@ -132,7 +132,7 @@ Currently all shells use the same 3-domain `proxy/allowlist.txt`. Future shells 
 - ~~Add `--since TIMESTAMP` flag~~ — Done: filter messages by timestamp
 - Added `--all` flag and `sanitize()` for terminal injection prevention
 
-**Exit criteria:** All met. `verify.sh` 23/23 on both shells. `make test` 12/12 pass. `read-chat.sh` shows full conversation with tool calls.
+**Exit criteria:** All met. `verify.sh` 24/24 on all three shells. `make test` passes. `read-chat.sh` shows full conversation with tool calls.
 
 ---
 

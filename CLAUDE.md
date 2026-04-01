@@ -89,6 +89,7 @@ openclaw-vault/
 │   ├── openclaw-hardening.json5    Agent config (JSON5, baked into image)
 │   ├── hard-shell.json5            Hard Shell preset config
 │   ├── split-shell.json5           Split Shell preset config
+│   ├── soft-shell.json5            Soft Shell preset config (the safari)
 │   ├── hard-shell-allowlist.txt    Hard Shell domain template
 │   ├── vault-seccomp.json          Syscall filter (vault container)
 │   └── vault-proxy-seccomp.json    Syscall filter (proxy container)
@@ -105,7 +106,7 @@ openclaw-vault/
 │   ├── setup.sh / setup.ps1        One-command setup
 │   ├── kill.sh / kill.ps1          Three-level kill switch
 │   ├── switch-shell.sh             DEPRECATED — use tool-control.sh instead
-│   └── verify.sh                   23-point security verification
+│   └── verify.sh                   24-point security verification
 ├── monitoring/                     [Stubs] Skill scanner, log parser
 ├── tests/                          Isolation verification tests
 └── docs/
@@ -124,16 +125,17 @@ openclaw-vault/
 
 ### Key Config Decisions
 
-| Setting | Value | Why |
-|---------|-------|-----|
-| `agents.defaults.model.primary` | `"anthropic/claude-haiku-4-5"` | Cheapest model, $5 test key |
-| `agents.defaults.sandbox.mode` | `"off"` | Container IS the sandbox; no Docker socket available |
-| `tools.profile` | `"coding"` | Split Shell: includes exec, read, write, grep, find, ls |
-| `tools.deny` | `[browser, web_search, web_fetch, group:automation, group:sessions, ...]` | Split Shell: no web, no cron, no sub-agents |
-| `tools.exec.security` | `"allowlist"` | Only safeBins-approved commands, with Telegram approval |
-| `tools.elevated.enabled` | `false` | Permanently disabled in all shell levels |
-| `gateway.mode` | `"local"` | Required for containerized operation |
-| `channels.telegram.dmPolicy` | `"pairing"` | Each sender must be approved |
+| Setting | Hard Shell | Split Shell | Soft Shell |
+|---------|------------|-------------|------------|
+| `tools.profile` | `minimal` | `coding` | `coding` |
+| `tools.exec.security` | `deny` | `allowlist` | `allowlist` |
+| `tools.exec.ask` | `always` | `always` | `on-miss` (safeBins auto-approve) |
+| `tools.exec.safeBins` | none | 16 | 26 |
+| Enabled tools | 0 | 11 | 17 |
+| Risk score | 0.0 | 0.18 | 0.34 |
+| Proxy domains | 3 | 3 | 4 |
+
+**Invariants (all shell levels):** `sandbox.mode: "off"`, `elevated.enabled: false`, `gateway.mode: "local"`, `channels.telegram.dmPolicy: "pairing"`, `fs.workspaceOnly: true`
 
 ## Commands
 
@@ -144,11 +146,12 @@ openclaw-vault/
 | `soft-stop` | `make stop` | safe | Graceful container stop |
 | `hard-kill` | `make kill` | destructive | Force stop, remove containers + volumes |
 | `nuclear-kill` | `make nuclear` | destructive | Remove everything |
-| `verify` | `make verify` | safe | 23-point security check |
+| `verify` | `make verify` | safe | 24-point security check |
 | `test` | `make test` | safe | Run all test scripts |
 | `tools-status` | `make tools-status` | safe | Show per-tool enabled/disabled status |
 | `hard-shell` | `make hard-shell` | caution | Switch to Hard Shell preset |
 | `split-shell` | `make split-shell` | caution | Switch to Split Shell preset |
+| `soft-shell` | `make soft-shell` | caution | Switch to Soft Shell preset (the safari) |
 | `network-report` | `make network-report` | safe | Analyze proxy logs for anomalies |
 | `session-report` | `make session-report` | safe | Post-session activity summary |
 | `log-rotate` | `make log-rotate` | safe | Rotate proxy logs, check transcript size |
@@ -179,10 +182,10 @@ openclaw-vault/
 5. **Exec controls** — security: allowlist, ask: always, safeBins whitelist (Split Shell)
 6. **Hardening config** — DM pairing, no persistence, telemetry disabled
 
-### 23-Point Verification (verify.sh)
+### 24-Point Verification (verify.sh)
 - **Checks 1-14:** Universal exoskeleton — proxy DNS, TCP, read-only root, caps dropped, no host mounts, no interop, API key isolation, no Docker socket, no sudo, non-root, seccomp, noexec, no-new-privileges, PID limit
-- **Checks 15-18:** Shell-specific config — adapts to detected shell level (Hard: profile=minimal, exec=deny; Split: profile=coding, exec=allowlist+always, safeBins match profiles)
-- **Checks 19-23:** Per-tool security — NEVER-enable tools denied, rm not in safeBins, no interpreters in safeBins, proxy allowlist verified, risk score within expected range
+- **Checks 15-18:** Shell-specific config — adapts to detected shell level (Hard: profile=minimal, exec=deny; Split: profile=coding, exec=allowlist+always; Soft: profile=coding, exec=allowlist+on-miss; safeBins match profiles)
+- **Checks 19-24:** Per-tool security — NEVER-enable tools denied, rm not in safeBins, no interpreters in safeBins, proxy allowlist verified, risk score within expected range, config integrity hash (tamper detection)
 
 ## Development Principles
 
@@ -226,4 +229,4 @@ openclaw-vault/
 - Do not give the agent any destructive capabilities — the agent is constructive only (read, write, create, search); all destructive operations are handled by the user or Claude from the host side
 
 ---
-*Last updated: 2026-03-30 — Tool control system, per-tool whitelisting*
+*Last updated: 2026-03-31 — Soft Shell operational, all three shell levels verified*

@@ -32,7 +32,7 @@ kill: ## Force stop the vault container immediately
 nuclear: ## Remove all containers, images, and volumes — full reset
 	@bash scripts/kill.sh --nuclear
 
-verify: ## Run 23-point security verification checks
+verify: ## Run 24-point security verification checks
 	@bash scripts/verify.sh
 
 test: ## Run all test scripts in tests/

@@ -133,7 +133,7 @@ bash scripts/setup.sh        # Linux / macOS
 .\scripts\setup.ps1          # Windows PowerShell
 ```
 
-Detects your runtime, prompts for your API key, builds the hardened image, starts the stack, runs 23 security checks. Five minutes.
+Detects your runtime, prompts for your API key, builds the hardened image, starts the stack, runs 24 security checks. Five minutes.
 
 ### Path B: Docker Desktop Sandbox Plugin (simpler, weaker)
 
@@ -166,7 +166,7 @@ podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl
 # Live container logs
 podman compose logs -f
 
-# Re-run the 23-point security check
+# Re-run the 24-point security check
 bash scripts/verify.sh
 ```
 
@@ -219,7 +219,7 @@ bash scripts/verify.sh
 | 13 | No-new-privileges set | Setuid binaries can't escalate |
 | 14 | PID limit active | Fork bombs contained |
 
-**Checks 15-18: Shell-specific** (adapts to detected Hard Shell or Split Shell)
+**Checks 15-18: Shell-specific** (adapts to detected Hard Shell, Split Shell, or Soft Shell)
 
 | # | Check | What it proves |
 |---|-------|---------------|
@@ -303,6 +303,7 @@ openclaw-vault/
 │   ├── openclaw-hardening.json5      # Active agent config (baked into image)
 │   ├── hard-shell.json5              # Hard Shell preset config
 │   ├── split-shell.json5             # Split Shell preset config
+│   ├── soft-shell.json5              # Soft Shell preset config (the safari)
 │   ├── hard-shell-allowlist.txt      # Hard Shell domain template
 │   ├── vault-seccomp.json            # Custom syscall filter (vault container)
 │   └── vault-proxy-seccomp.json      # Custom syscall filter (proxy container)
@@ -321,7 +322,7 @@ openclaw-vault/
 ├── scripts/
 │   ├── tool-control.sh               # Per-tool whitelisting/blacklisting
 │   ├── tool-control-core.py          # Config generator core (python3)
-│   ├── verify.sh                     # 23-point security verification
+│   ├── verify.sh                     # 24-point security verification
 │   ├── vault-audit.sh                # Workspace audit (files, memory, network, tools, injection)
 │   ├── read-chat.sh                  # Read Telegram conversation from transcripts
 │   ├── install-skill.sh              # Install forge-vetted skills into workspace
