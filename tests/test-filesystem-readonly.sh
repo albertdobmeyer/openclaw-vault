@@ -17,8 +17,9 @@ else
 fi
 
 # Test 2: /tmp is writable (tmpfs)
+# Note: rm is stripped from the image (constructive only), so we just test touch
 echo -n "  /tmp writable (tmpfs): "
-if $RUNTIME exec "$CONTAINER" sh -c "touch /tmp/test-file && rm /tmp/test-file" &>/dev/null; then
+if $RUNTIME exec "$CONTAINER" sh -c "touch /tmp/test-readonly-check 2>&1" &>/dev/null; then
     echo "PASS"
 else
     echo "FAIL — /tmp should be writable"
