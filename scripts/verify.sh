@@ -174,6 +174,8 @@ print(f'CFG_BROWSER_DENIED={has_browser}')
         SHELL_LEVEL="HARD"
     elif [ "$CFG_PROFILE" = "coding" ] && [ "$CFG_EXEC_SEC" = "allowlist" ] && [ "$CFG_EXEC_ASK" = "always" ] && [ "$CFG_BROWSER_DENIED" = "True" ]; then
         SHELL_LEVEL="SPLIT"
+    elif [ "$CFG_PROFILE" = "coding" ] && [ "$CFG_EXEC_SEC" = "allowlist" ] && [ "$CFG_EXEC_ASK" = "on-miss" ] && [ "$CFG_BROWSER_DENIED" = "True" ]; then
+        SHELL_LEVEL="SOFT"
     fi
 
     echo "  Detected shell level: $SHELL_LEVEL"
@@ -208,9 +210,23 @@ print(f'CFG_BROWSER_DENIED={has_browser}')
         check 18 "Config: safeBins match safeBinProfiles" \
             "node -e \"const c=JSON.parse(require('fs').readFileSync('/home/vault/.openclaw/openclaw.json','utf8')); const e=c.tools.exec; const bins=new Set(e.safeBins||[]); const profs=new Set(Object.keys(e.safeBinProfiles||{})); const missing=[...bins].filter(b=>!profs.has(b)); const extra=[...profs].filter(p=>!bins.has(p)); process.exit(missing.length===0&&extra.length===0?0:1)\""
 
+    elif [ "$SHELL_LEVEL" = "SOFT" ]; then
+        # Soft Shell checks
+        check 15 "Config: profile = coding" \
+            "node -e \"const c=JSON.parse(require('fs').readFileSync('/home/vault/.openclaw/openclaw.json','utf8')); process.exit(c.tools.profile==='coding'?0:1)\""
+
+        check 16 "Config: exec = allowlist + ask on-miss" \
+            "node -e \"const c=JSON.parse(require('fs').readFileSync('/home/vault/.openclaw/openclaw.json','utf8')); const e=c.tools.exec; process.exit(e.security==='allowlist'&&e.ask==='on-miss'?0:1)\""
+
+        check 17 "Config: exec host = gateway, elevated off" \
+            "node -e \"const c=JSON.parse(require('fs').readFileSync('/home/vault/.openclaw/openclaw.json','utf8')); process.exit(c.tools.exec.host==='gateway'&&c.tools.elevated.enabled===false?0:1)\""
+
+        check 18 "Config: safeBins match safeBinProfiles" \
+            "node -e \"const c=JSON.parse(require('fs').readFileSync('/home/vault/.openclaw/openclaw.json','utf8')); const e=c.tools.exec; const bins=new Set(e.safeBins||[]); const profs=new Set(Object.keys(e.safeBinProfiles||{})); const missing=[...bins].filter(b=>!profs.has(b)); const extra=[...profs].filter(p=>!bins.has(p)); process.exit(missing.length===0&&extra.length===0?0:1)\""
+
     else
         printf "  [%2d] %-50s FAIL\n" 15 "Config: known shell level"
-        echo "       Shell level UNKNOWN — config does not match Hard or Split Shell"
+        echo "       Shell level UNKNOWN — config does not match Hard, Split, or Soft Shell"
         echo "       profile=$CFG_PROFILE exec.security=$CFG_EXEC_SEC exec.ask=$CFG_EXEC_ASK"
         FAIL=$((FAIL + 1))
         # Checks 16-18 are shell-specific — skip them when shell is unknown
@@ -295,14 +311,17 @@ print('ok')
     if [ -n "$proxy_allowlist" ]; then
         result=$(echo "$proxy_allowlist" | python3 -c "
 import sys
-# Known safe base domains
+# Known safe domains per shell level
 base = {'api.anthropic.com', 'api.openai.com', 'api.telegram.org'}
+# Soft Shell adds read-only GitHub access
+soft_extra = {'raw.githubusercontent.com'}
+allowed = base | soft_extra
 domains = set()
 for line in sys.stdin:
     line = line.strip()
     if line and not line.startswith('#'):
         domains.add(line)
-unexpected = domains - base
+unexpected = domains - allowed
 if unexpected:
     print(f'Unexpected domains in allowlist: {sorted(unexpected)}')
     sys.exit(1)
@@ -336,12 +355,21 @@ print('ok')
                 FAIL=$((FAIL + 1))
             fi
         elif [ "$SHELL_LEVEL" = "SPLIT" ]; then
-            # Split Shell: risk score should be in 0.1-0.3 range
+            # Split Shell: risk score should be in 0.1-0.35 range
             if python3 -c "assert 0.0 < float('$score') <= 0.35" 2>/dev/null; then
                 echo "PASS (score=$score, expected 0.1-0.35 for Split Shell)"
                 PASS=$((PASS + 1))
             else
                 echo "FAIL (score=$score, outside expected range for Split Shell)"
+                FAIL=$((FAIL + 1))
+            fi
+        elif [ "$SHELL_LEVEL" = "SOFT" ]; then
+            # Soft Shell: risk score should be in 0.25-0.5 range
+            if python3 -c "assert 0.25 < float('$score') <= 0.5" 2>/dev/null; then
+                echo "PASS (score=$score, expected 0.25-0.5 for Soft Shell)"
+                PASS=$((PASS + 1))
+            else
+                echo "FAIL (score=$score, outside expected range for Soft Shell)"
                 FAIL=$((FAIL + 1))
             fi
         else

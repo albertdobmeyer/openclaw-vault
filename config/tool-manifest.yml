@@ -210,8 +210,6 @@ presets:
       - basename
       - dirname
       - env
-      - true
-      - false
       - test
       - printf
     extra_domains:

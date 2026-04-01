@@ -1,4 +1,4 @@
-.PHONY: help setup start stop kill nuclear verify test network-report session-report log-rotate tools-status tools-dry-run hard-shell split-shell install-skill list-skills
+.PHONY: help setup start stop kill nuclear verify test network-report session-report log-rotate tools-status tools-dry-run hard-shell split-shell soft-shell install-skill list-skills
 
 SHELL := /bin/bash
 
@@ -49,6 +49,9 @@ hard-shell: ## Switch to Hard Shell preset (maximum lockdown)
 
 split-shell: ## Switch to Split Shell preset (workspace I/O with approval)
 	@bash scripts/tool-control.sh --preset split --apply
+
+soft-shell: ## Switch to Soft Shell preset (safari — broad autonomy, absolute moat)
+	@bash scripts/tool-control.sh --preset soft --apply
 
 install-skill: ## Install a vetted skill (SKILL=<dir> [CLEARANCE=<report.json>])
 	@bash scripts/install-skill.sh $(SKILL) $(if $(CLEARANCE),--clearance $(CLEARANCE))
