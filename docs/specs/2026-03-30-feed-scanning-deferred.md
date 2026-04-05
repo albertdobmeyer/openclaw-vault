@@ -6,7 +6,9 @@
 
 ## Context
 
-Moltbook-pioneer has a feed scanner (30 injection patterns) that detects prompt injection in agent social network content. When Hum eventually interacts with Moltbook, this scanner should protect against malicious feed content.
+Moltbook-pioneer has a feed scanner (25 injection patterns) that detects prompt injection in agent social network content. When Hum eventually interacts with Moltbook, this scanner should protect against malicious feed content.
+
+**Integration spec:** `moltbook-pioneer/docs/specs/2026-04-04-vault-integration-design.md` (written 2026-04-04, covers pattern export format, proxy integration, blocking policy).
 
 ## Current State
 
