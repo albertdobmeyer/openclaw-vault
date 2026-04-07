@@ -30,7 +30,7 @@ Feed scanning integration becomes relevant when:
 - vault-proxy.py intercepts responses from Moltbook API domains
 - Extracts post/comment content from JSON responses
 - Runs pioneer's injection patterns against the content
-- Flags or blocks responses containing injection patterns
+- Flags or blocks responses containing injection patterns based on severity: CRITICAL patterns block the response, HIGH and MEDIUM patterns are logged but allowed through
 - Logs all findings to the proxy log
 
 This keeps the scanning on the HOST side (trusted), not inside the container (untrusted). The agent never sees flagged content.
