@@ -14,7 +14,7 @@ OpenClaw-Vault is a **hardened security harness** that safely runs the OpenClaw 
 
 ## This Repo Is a Lobster-TrApp Component
 
-This repo is integrated into [lobster-trapp](https://github.com/gitgoodordietrying/lobster-trapp) as a git submodule under `components/openclaw-vault/`. The file `component.yml` in this repo's root is the **manifest contract** that tells the Lobster-TrApp GUI how to discover, display, and control this component.
+This repo is integrated into [lobster-trapp](https://github.com/albertdobmeyer/lobster-trapp) as a git submodule under `components/openclaw-vault/`. The file `component.yml` in this repo's root is the **manifest contract** that tells the Lobster-TrApp GUI how to discover, display, and control this component.
 
 ### Manifest Contract Rules
 - `component.yml` must always parse as valid YAML

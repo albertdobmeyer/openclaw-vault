@@ -4,7 +4,7 @@
 
 You've decided to run [OpenClaw](https://github.com/anthropics/openclaw). This makes that decision less likely to ruin your day.
 
-**Author**: [@gitgoodordietrying](https://github.com/gitgoodordietrying)
+**Author**: [@albertdobmeyer](https://github.com/albertdobmeyer)
 
 **The headline feature:** your API key never enters the container. A proxy sidecar injects it into outbound requests at the network layer. Even with full container compromise, `env | grep API` returns nothing. No other hardening guide does this.
 
@@ -57,7 +57,7 @@ This isn't theoretical. All of this happened in one week (Jan 28 – Feb 3, 2026
 
 Every other hardening guide puts the API key inside the container as an environment variable. A compromised process reads it from `/proc/self/environ`. The OpenClaw-Vault solves this with proxy-side injection: the container talks to `http://vault-proxy:8080`, the proxy checks the domain allowlist, injects the auth header, and forwards. The container never sees the key.
 
-For a deep dive into the threat landscape, see the [Security Analysis Compilation](https://github.com/gitgoodordietrying/openclaw-research/blob/main/docs/security-report.md) in the companion research repository.
+For a deep dive into the threat landscape, see the [Security Analysis Compilation](https://github.com/albertdobmeyer/openclaw-research/blob/main/docs/security-report.md) in the companion research repository.
 
 ---
 
@@ -129,7 +129,7 @@ No. An empty drive doesn't give you kernel isolation, which is the actual securi
 ### Path A: Podman/Docker + mitmproxy (recommended)
 
 ```bash
-git clone https://github.com/gitgoodordietrying/openclaw-vault.git
+git clone https://github.com/albertdobmeyer/openclaw-vault.git
 cd openclaw-vault
 bash scripts/setup.sh        # Linux / macOS
 .\scripts\setup.ps1          # Windows PowerShell
@@ -353,7 +353,7 @@ This started as security research, not a container project. Understanding OpenCl
 
 The companion research repository documents the full journey:
 
-- [openclaw-research](https://github.com/gitgoodordietrying/openclaw-research) — security analysis, threat modeling, ecosystem exploration, and 24 published ClawHub skills
+- [openclaw-research](https://github.com/albertdobmeyer/openclaw-research) — security analysis, threat modeling, ecosystem exploration, and 24 published ClawHub skills
 
 The OpenClaw-Vault is the infrastructure that emerged from understanding the problem space first.
 

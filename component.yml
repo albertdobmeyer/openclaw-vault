@@ -8,7 +8,7 @@ identity:
   role: runtime
   icon: shield
   color: "#dc2626"
-  repo: https://github.com/gitgoodordietrying/openclaw-vault
+  repo: https://github.com/albertdobmeyer/openclaw-vault
 
 status:
   states:
