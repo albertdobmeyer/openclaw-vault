@@ -54,7 +54,7 @@ You should see something like `podman version 4.9.3`.
 ## Step 2: Download the Vault
 
 ```bash
-git clone https://github.com/albertdobmeyer/openclaw-vault.git
+git clone https://github.com/gitgoodordietrying/openclaw-vault.git
 cd openclaw-vault
 ```
 

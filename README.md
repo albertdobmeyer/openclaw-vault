@@ -4,6 +4,8 @@
 
 You've decided to run [OpenClaw](https://github.com/anthropics/openclaw). This makes that decision less likely to ruin your day.
 
+**Author**: [@gitgoodordietrying](https://github.com/gitgoodordietrying)
+
 **The headline feature:** your API key never enters the container. A proxy sidecar injects it into outbound requests at the network layer. Even with full container compromise, `env | grep API` returns nothing. No other hardening guide does this.
 
 ### What is OpenClaw?
