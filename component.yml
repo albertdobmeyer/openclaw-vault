@@ -137,6 +137,26 @@ commands:
     sort_order: 10
     timeout_seconds: 60
 
+  - id: install-skill
+    name: Install Skill
+    description: Install a certified skill from the forge deliveries volume into the agent workspace
+    group: operations
+    type: action
+    danger: caution
+    command: make install-skill SKILL=${skill_path}
+    args:
+      - id: skill_path
+        name: Skill path
+        description: Path to the certified skill in exports/
+        type: string
+        required: true
+    output:
+      format: ansi
+      display: log
+    available_when: [running]
+    sort_order: 15
+    timeout_seconds: 30
+
   - id: logs
     name: Container Logs
     description: Stream live logs from the vault container
@@ -299,3 +319,84 @@ health:
       green: ">= 8"
       yellow: ">= 5"
       red: "< 5"
+
+# ─── Workflows ────────────────────────────────────────────────────
+workflows:
+  - id: secure-start
+    name: Start Securely
+    description: Build, start, and verify the vault in one step
+    user_description: >
+      Sets up the secure environment for your assistant, starts it
+      running, and verifies all 24 security checks pass before
+      letting your assistant go online.
+    trigger: manual
+    danger: caution
+    steps:
+      - id: setup
+        command: setup
+        abort_on_failure: true
+      - id: start
+        command: start
+        depends_on: setup
+        abort_on_failure: true
+      - id: verify
+        command: verify
+        depends_on: start
+    output:
+      display: checklist
+      summary_step: verify
+
+  - id: switch-to-hard
+    name: Maximum Restriction
+    description: Switch to Hard Shell — chat only, no tools
+    user_description: >
+      Locks your assistant down to chat-only mode. It can still
+      talk to you via Telegram but cannot access files, run
+      commands, or browse the web.
+    trigger: manual
+    danger: safe
+    steps:
+      - id: switch
+        command: hard-shell
+      - id: verify
+        command: verify
+        depends_on: switch
+    output:
+      display: checklist
+      summary_step: verify
+
+  - id: switch-to-split
+    name: Supervised Access
+    description: Switch to Split Shell — selective tools, approval required
+    user_description: >
+      Gives your assistant access to specific tools, but every
+      action requires your approval first. Good for tasks like
+      file management or note-taking where you want oversight.
+    trigger: manual
+    danger: caution
+    shell_requirement: hard
+    steps:
+      - id: switch
+        command: split-shell
+      - id: verify
+        command: verify
+        depends_on: switch
+    output:
+      display: checklist
+      summary_step: verify
+
+  - id: full-verify
+    name: Security Audit
+    description: Run full 24-point verification suite
+    user_description: >
+      Checks every security layer — container isolation, network
+      filtering, tool restrictions, and configuration integrity.
+      Shows exactly what protections are active.
+    trigger: manual
+    danger: safe
+    steps:
+      - id: verify
+        command: verify
+    output:
+      display: report
+      summary_step: verify
