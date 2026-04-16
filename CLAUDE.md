@@ -66,6 +66,27 @@ Two-container stack (compose.yml):
 └─────────────────────────────────────────────┘
 ```
 
+### The Full Perimeter
+
+This repo's 2-container stack (vault-agent + vault-proxy) is the core of a larger 4-container perimeter defined in `compose.yml` at the lobster-trapp root. Two additional containers operate inside this perimeter:
+
+- **vault-forge** (clawhub-forge) — downloads and scans SKILL files inside the fence, delivers certified clean output to the agent via a shared volume (forge-deliveries). Runs on forge-net.
+- **vault-pioneer** (moltbook-pioneer) — scans social feed content for injection attacks inside the fence, handles Telegram communication. Runs on pioneer-net. Currently disconnected (Moltbook API down since 2026-04-05).
+
+Both connect to vault-proxy for internet access but CANNOT reach vault-agent or each other directly. The vault is the perimeter — forge and pioneer operate inside it.
+
+```
+4-container perimeter (lobster-trapp compose.yml):
+
+vault-proxy ←── forge-net ──→ vault-forge
+     ↑
+ agent-net
+     ↓
+vault-agent ←── forge-deliveries (shared volume, read-only) ──→ vault-forge
+     ↑
+ pioneer-net ──→ vault-pioneer
+```
+
 ### How Our Vault Synergizes With OpenClaw
 
 | OpenClaw Layer | What It Does | Our Vault Layer | What It Adds |
