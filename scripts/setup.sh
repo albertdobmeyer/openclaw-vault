@@ -101,6 +101,19 @@ echo "    Container: openclaw-vault"
 echo "    Proxy:     vault-proxy (mitmproxy on internal network)"
 echo ""
 
+# --- Wait for proxy to be ready ---
+echo "[*] Waiting for proxy to initialize..."
+for i in $(seq 1 15); do
+    if $RUNTIME exec vault-proxy sh -c 'echo OK' &>/dev/null; then
+        echo "[+] Proxy is ready."
+        break
+    fi
+    if [ "$i" = "15" ]; then
+        echo "[!] Proxy did not become ready in 15 seconds. Running verification anyway..."
+    fi
+    sleep 1
+done
+
 # --- Run verification ---
 echo "[*] Running security verification..."
 bash "$VAULT_DIR/scripts/verify.sh"
