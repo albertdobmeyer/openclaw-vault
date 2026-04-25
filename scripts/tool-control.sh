@@ -22,7 +22,14 @@ MANIFEST="$VAULT_DIR/config/tool-manifest.yml"
 
 RUNTIME="podman"
 command -v podman &>/dev/null || RUNTIME="docker"
-CONTAINER="openclaw-vault"
+# Container name is configurable via OPENCLAW_CONTAINER for embedders
+# (e.g. lobster-trapp names this container "vault-agent" in its parent compose).
+CONTAINER="${OPENCLAW_CONTAINER:-openclaw-vault}"
+# When true, --apply writes config + allowlist but does NOT touch container
+# lifecycle (no compose stop/up, no verify). Caller is responsible for
+# restarting the container. Required when invoked from a parent orchestrator
+# whose compose definition owns the container.
+NO_RESTART=false
 
 # Colors
 BOLD='\033[1m'
@@ -206,16 +213,18 @@ do_apply() {
     echo "====================================="
     echo ""
 
-    # Detect compose command
+    # Detect compose command (only needed when we will restart containers)
     local COMPOSE=""
-    if command -v "${RUNTIME}-compose" &>/dev/null; then
-        COMPOSE="${RUNTIME}-compose"
-    elif $RUNTIME compose version &>/dev/null 2>&1; then
-        COMPOSE="$RUNTIME compose"
-    fi
-    if [ -z "$COMPOSE" ]; then
-        echo -e "${RED}ERROR: No compose command found.${NC}" >&2
-        exit 1
+    if [ "$NO_RESTART" != "true" ]; then
+        if command -v "${RUNTIME}-compose" &>/dev/null; then
+            COMPOSE="${RUNTIME}-compose"
+        elif $RUNTIME compose version &>/dev/null 2>&1; then
+            COMPOSE="$RUNTIME compose"
+        fi
+        if [ -z "$COMPOSE" ]; then
+            echo -e "${RED}ERROR: No compose command found.${NC}" >&2
+            exit 1
+        fi
     fi
 
     # Step 1: Generate config
@@ -285,30 +294,53 @@ print(hashlib.sha256(critical.encode()).hexdigest())
     local config_tmp
     config_tmp=$(mktemp /tmp/openclaw-config-XXXXXX.json)
     echo "$config_json" > "$config_tmp"
-    $RUNTIME cp "$config_tmp" openclaw-vault:/home/vault/.openclaw/openclaw.json 2>/dev/null && {
+    $RUNTIME cp "$config_tmp" "${CONTAINER}":/home/vault/.openclaw/openclaw.json 2>/dev/null && {
         echo "[tool-control] Config installed via container copy"
     } || {
-        # Fallback: update the baked-in source config and rebuild
+        if [ "$NO_RESTART" = "true" ]; then
+            echo -e "${RED}[tool-control] podman cp to ${CONTAINER} failed.${NC}" >&2
+            echo -e "${RED}  --no-restart requires the container to already exist and be writable.${NC}" >&2
+            echo -e "${RED}  Caller must ensure ${CONTAINER} is running (or paused) before applying config.${NC}" >&2
+            rm -f "$config_tmp"
+            exit 1
+        fi
+        # Fallback: update the baked-in source config and rebuild (standalone use only)
         echo "[tool-control] Container copy failed — updating source config and rebuilding..."
         cp "$config_tmp" "$VAULT_DIR/config/openclaw-hardening.json5"
-        $RUNTIME stop openclaw-vault vault-proxy 2>/dev/null || true
+        $RUNTIME stop "$CONTAINER" vault-proxy 2>/dev/null || true
         $RUNTIME build -t openclaw-vault -f "$VAULT_DIR/Containerfile" "$VAULT_DIR" 2>&1 | tail -3
         $RUNTIME tag openclaw-vault openclaw-vault_vault 2>/dev/null || true
     }
     rm -f "$config_tmp"
 
-    # Step 6: Stop the full stack for clean restart
-    echo "[tool-control] Stopping containers for clean restart..."
-    cd "$VAULT_DIR"
-    $COMPOSE stop 2>/dev/null || $RUNTIME stop openclaw-vault vault-proxy 2>/dev/null || true
+    # Step 6: Stop the full stack for clean restart (skipped under --no-restart)
+    if [ "$NO_RESTART" != "true" ]; then
+        echo "[tool-control] Stopping containers for clean restart..."
+        cd "$VAULT_DIR"
+        $COMPOSE stop 2>/dev/null || $RUNTIME stop "$CONTAINER" vault-proxy 2>/dev/null || true
+    fi
 
-    # Step 7: Write allowlist atomically (temp file + move)
+    # Step 7: Write allowlist atomically (temp file + move) — always runs
     echo "[tool-control] Updating proxy allowlist..."
     local allowlist_path="$VAULT_DIR/proxy/allowlist.txt"
     local allowlist_tmp="${allowlist_path}.tmp"
     echo "$allowlist" > "$allowlist_tmp"
     mv -f "$allowlist_tmp" "$allowlist_path"
     echo "[tool-control] Allowlist updated"
+
+    # Under --no-restart we are done. Caller restarts and verifies.
+    if [ "$NO_RESTART" = "true" ]; then
+        echo ""
+        echo -e "${GREEN}${BOLD}[tool-control] Config + allowlist written.${NC}"
+        echo "  Container: ${CONTAINER}"
+        echo "  Preset: ${preset:-custom}"
+        echo "  Risk score: $score"
+        echo "  Enabled tools: $enabled_count"
+        echo ""
+        echo -e "${YELLOW}  --no-restart specified. Caller must restart ${CONTAINER} to apply.${NC}"
+        echo ""
+        return 0
+    fi
 
     # Step 8: Start the containers
     echo "[tool-control] Starting containers..."
@@ -321,7 +353,7 @@ print(hashlib.sha256(critical.encode()).hexdigest())
     # Step 9: Wait for gateway
     echo "[tool-control] Waiting for gateway (up to 90s)..."
     for i in $(seq 1 90); do
-        if $RUNTIME logs openclaw-vault 2>&1 | grep -q "listening on ws://\|OpenClaw"; then
+        if $RUNTIME logs "$CONTAINER" 2>&1 | grep -q "listening on ws://\|OpenClaw"; then
             echo "[tool-control] Gateway ready (${i}s)"
             break
         fi
@@ -379,6 +411,10 @@ while [ $# -gt 0 ]; do
             MODE="apply"
             shift
             ;;
+        --no-restart)
+            NO_RESTART=true
+            shift
+            ;;
         --enable)
             EXTRA_ARGS+=("--enable" "$2")
             shift 2
@@ -399,16 +435,21 @@ while [ $# -gt 0 ]; do
             echo "  $0 --status                              Show current tool status"
             echo "  $0 --preset <name> --dry-run             Preview a preset config"
             echo "  $0 --preset <name> --apply               Apply a preset config"
+            echo "  $0 --preset <name> --apply --no-restart  Apply config; caller restarts container"
             echo "  $0 --preset <name> --enable <tool> --dry-run"
             echo "  $0 --preset <name> --disable <tool> --dry-run"
             echo ""
             echo "Presets: hard, split"
+            echo ""
+            echo "Environment:"
+            echo "  OPENCLAW_CONTAINER  Container name to target (default: openclaw-vault)"
             echo ""
             echo "Examples:"
             echo "  $0 --preset hard --dry-run               Preview Hard Shell"
             echo "  $0 --preset split --dry-run              Preview Split Shell"
             echo "  $0 --preset split --enable web_search --dry-run"
             echo "  $0 --status                              What's currently enabled?"
+            echo "  OPENCLAW_CONTAINER=vault-agent $0 --preset split --apply --no-restart"
             exit 0
             ;;
         *)
