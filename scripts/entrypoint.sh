@@ -17,7 +17,7 @@ CERT="/opt/proxy-ca/mitmproxy-ca-cert.pem"
 # --- 1. Config installation ---
 # On tmpfs (Hard Shell): always copy — tmpfs is empty on start.
 # On persistent volume (Split Shell): only copy on first run.
-# The switch-shell.sh script writes config directly to the volume when switching.
+# The tool-control.sh script writes config directly to the volume when switching shell levels.
 mkdir -p "$(dirname "$CONFIG_DST")"
 
 if [ -f "$CONFIG_DST" ]; then

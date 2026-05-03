@@ -113,7 +113,7 @@ Replace `monitoring/session-report.sh` stub with a real implementation.
 
 Currently all shells use the same 3-domain `proxy/allowlist.txt`. Future shells may need different domains.
 
-**Design decision needed:** Should allowlists be per-shell files (`proxy/hard-shell-allowlist.txt`, `proxy/split-shell-allowlist.txt`) or should `switch-shell.sh` swap the allowlist file during molt?
+**Design decision needed:** Should allowlists be per-shell files (`proxy/hard-shell-allowlist.txt`, `proxy/split-shell-allowlist.txt`) or should `tool-control.sh` swap the allowlist file during a shell switch?
 
 **For now:** Document that the 3-domain allowlist is intentionally shared between Hard Shell and Split Shell. Soft Shell allowlist design is a Phase 4 task.
 
@@ -138,7 +138,7 @@ Currently all shells use the same 3-domain `proxy/allowlist.txt`. Future shells 
 
 ## Phase 4: Tool Control System — COMPLETED (2026-03-30)
 
-**Why:** Soft Shell is the next trust level — broader autonomy while the exoskeleton stays enforced. Requires a proper design process before implementation.
+**Why:** Soft Shell is the next trust level — broader autonomy while the universal container hardening stays enforced. Requires a proper design process before implementation.
 
 ### Design Questions to Answer
 
@@ -153,13 +153,13 @@ Currently all shells use the same 3-domain `proxy/allowlist.txt`. Future shells 
 ### Implementation Work (after design)
 
 - Create `config/soft-shell.json5`
-- Update `switch-shell.sh` to support `soft|3`
+- Update `tool-control.sh` to support `soft|3`
 - Create per-shell allowlist if needed
 - Update `verify.sh` with Soft Shell expectations
 - Write Soft Shell verification tests
 - Document in `openclaw-reference.md`
 
-**Exit criteria:** Soft Shell design document written and approved. Config file created. Verify + tests pass. Hum demonstrably has broader capability while exoskeleton holds.
+**Exit criteria:** Soft Shell design document written and approved. Config file created. Verify + tests pass. The agent demonstrably has broader capability while the universal container hardening continues to hold.
 
 ---
 

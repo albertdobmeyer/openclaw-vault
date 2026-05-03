@@ -144,7 +144,7 @@
     // Filesystem: workspace only — the critical boundary.
     // Agent can read/write inside ~/.openclaw/workspace/ but NOWHERE ELSE.
     // Enforced by assertSandboxPath() with symlink escape detection.
-    // Defense-in-depth: even if this fails, the container exoskeleton limits access.
+    // Defense-in-depth: even if this check fails, the container's hardening (read-only root, dropped capabilities, seccomp) limits the blast radius.
     fs: {
       workspaceOnly: true,
     },

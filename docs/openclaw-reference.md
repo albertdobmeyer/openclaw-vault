@@ -312,7 +312,7 @@ In Split Shell mode, the persistent volume preserves:
 
 **What Hum can do:** Search the web, schedule tasks, process files, run text processing commands autonomously (safeBins auto-approve), send messages on authorized channels — all within the workspace boundary.
 
-**What Hum still cannot do:** Browse websites (browser denied by default), spawn sub-agents (sessions denied by default), modify its own security config, delete files, run interpreters, access the driver seat.
+**What Hum still cannot do:** Browse websites (browser denied by default), spawn sub-agents (sessions denied by default), modify its own security configuration, delete files, run interpreters, or reach the protected resource set (root, SSH keys, credential stores, administrative accounts).
 
 ---
 

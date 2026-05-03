@@ -4,9 +4,9 @@
 # Validates all security controls. Runs from the host (execs into container).
 # Shell-aware: detects Hard Shell or Split Shell and verifies config accordingly.
 #
-# Checks 1-14:  Universal exoskeleton checks (same for all shells)
-# Checks 15-18: Shell-specific config verification (adapts to detected level)
-# Checks 19-24: Per-tool security checks (NEVER-enable, rm, interpreters, allowlist, risk, integrity)
+# Checks 1-14:  Universal container hardening (identical for every shell level)
+# Checks 15-18: Shell-specific configuration (adapts to the detected shell level)
+# Checks 19-24: Per-tool security (NEVER-enable, rm, interpreters, allowlist, risk, integrity)
 #
 # Usage: bash scripts/verify.sh
 

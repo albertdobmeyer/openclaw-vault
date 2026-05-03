@@ -17,7 +17,7 @@
 Built a complete zero-trust security harness for the OpenClaw AI agent with three shell levels (Hard/Split/Soft), per-tool whitelisting/blacklisting, 24-point security verification, and comprehensive monitoring. The module is certified and shippable.
 
 ### Key Deliverables
-- **Three shell levels:** Hard Shell (cage, 0.0), Split Shell (arena, 0.18), Soft Shell (safari, 0.34)
+- **Three shell levels:** Hard Shell (risk score 0.00), Split Shell (0.18), Soft Shell (0.34)
 - **Tool control system:** Per-tool whitelisting/blacklisting from a YAML manifest (26 tools documented with injection vectors)
 - **24-point security verification:** Exoskeleton (14) + shell-specific (4) + per-tool security (6)
 - **Monitoring:** Network log parser, session report generator, log rotation, vault audit, read-chat
@@ -110,7 +110,7 @@ The vault's `install-skill.sh` validates this JSON structure:
 | Pioneer roadmap | `moltbook-pioneer/docs/roadmap.md` | 5 phases (created 2026-03-27) |
 | Skill installation spec | `openclaw-vault/docs/specs/2026-03-30-skill-installation-path.md` | Clearance report format |
 | Tool manifest | `openclaw-vault/config/tool-manifest.yml` | All 26 tools with injection vectors |
-| GLOSSARY | `lobster-trapp/GLOSSARY.md` | Official terminology (Shell levels, safari analogy) |
+| GLOSSARY | `lobster-trapp/GLOSSARY.md` | Official terminology (shell levels, architecture, security terms) |
 
 ---
 

@@ -338,4 +338,4 @@ Your API key is stored only in the proxy, never in the agent container. Even if 
 
 - **Explore the settings:** Check `config/openclaw-hardening.json5` to see the security configuration
 - **View proxy logs:** `podman exec vault-proxy cat /var/log/vault-proxy/requests.jsonl` shows every request the agent made
-- **Learn about shell levels:** The vault supports three security levels — Hard Shell (conversation only), Split Shell (file commands with approval), and Soft Shell (the safari — web search, scheduling, autonomous file work). Switch with `make hard-shell`, `make split-shell`, or `make soft-shell`
+- **Learn about shell levels:** The vault supports three security levels — Hard Shell (conversation only), Split Shell (file commands with approval), and Soft Shell (broad autonomy: web search, scheduling, autonomous file work). Switch with `make hard-shell`, `make split-shell`, or `make soft-shell`.

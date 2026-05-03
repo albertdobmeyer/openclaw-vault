@@ -162,7 +162,7 @@ This shows effective permissions, current sandbox state, tool allow/deny status.
 ### CRITICAL — Verify workspaceOnly
 - [ ] Test if Hum can read `/etc/passwd` or other files outside workspace
 - [ ] Check if `tools.fs.workspaceOnly` is actually enforced by OpenClaw
-- [ ] If NOT enforced: our security model has a gap — the container exoskeleton (read-only root) is the only thing preventing filesystem access outside workspace
+- [ ] If NOT enforced: our security model has a gap — the container's hardening (read-only root) is the only thing preventing filesystem access outside the workspace
 - [ ] Run `openclaw sandbox explain` inside the container
 
 ### HIGH — Update openclaw-reference.md

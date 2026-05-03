@@ -48,7 +48,7 @@ never_safebins:
 
 # --- INVARIANT CONFIG ---
 # tool-control.sh always sets these regardless of tool selection.
-# These values define the exoskeleton and cannot be changed by tool choices.
+# These values define the universal container hardening and cannot be changed by tool choices.
 invariants:
   agents.defaults.sandbox.mode: "off"        # Container IS the sandbox
   tools.elevated.enabled: false              # Permanently disabled
@@ -158,7 +158,7 @@ presets:
 
   soft:
     score: 0.34
-    description: "The safari — broad autonomy, safeBins auto-approve, absolute moat"
+    description: "Soft Shell — broad autonomy with safeBins auto-approval; protected resources remain denied"
     profile: coding
     exec_security: "allowlist"
     exec_ask: "on-miss"

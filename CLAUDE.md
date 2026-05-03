@@ -71,9 +71,9 @@ Two-container stack (compose.yml):
 This repo's 2-container stack (vault-agent + vault-proxy) is the core of a larger 4-container perimeter defined in `compose.yml` at the lobster-trapp root. Two additional containers operate inside this perimeter:
 
 - **vault-forge** (clawhub-forge) — downloads and scans SKILL files inside the fence, delivers certified clean output to the agent via a shared volume (forge-deliveries). Runs on forge-net.
-- **vault-pioneer** (moltbook-pioneer) — scans social feed content for injection attacks inside the fence, handles Telegram communication. Runs on pioneer-net. Currently disconnected (Moltbook API down since 2026-04-05).
+- **vault-pioneer** (moltbook-pioneer) — originally scanned Moltbook feed content for injection patterns. **Parked since 2026-05-03** following Meta's acquisition of Moltbook (2026-03-10) and the resulting API instability since 2026-04-05. The container is still defined in `compose.yml` for completeness.
 
-Both connect to vault-proxy for internet access but CANNOT reach vault-agent or each other directly. The vault is the perimeter — forge and pioneer operate inside it.
+Both connect to vault-proxy for internet access but cannot reach vault-agent or each other directly. The vault is the inner perimeter; forge and pioneer operate alongside it inside the same compose network.
 
 ```
 4-container perimeter (lobster-trapp compose.yml):
@@ -110,7 +110,7 @@ openclaw-vault/
 │   ├── openclaw-hardening.json5    Agent config (JSON5, baked into image)
 │   ├── hard-shell.json5            Hard Shell preset config
 │   ├── split-shell.json5           Split Shell preset config
-│   ├── soft-shell.json5            Soft Shell preset config (the safari)
+│   ├── soft-shell.json5            Soft Shell preset config
 │   ├── hard-shell-allowlist.txt    Hard Shell domain template
 │   ├── vault-seccomp.json          Syscall filter (vault container)
 │   └── vault-proxy-seccomp.json    Syscall filter (proxy container)
@@ -122,11 +122,10 @@ openclaw-vault/
 ├── scripts/
 │   ├── entrypoint.sh               Container startup (config + CA cert + auth)
 │   ├── proxy-bootstrap.mjs         Global undici proxy dispatcher
-│   ├── tool-control.sh              Per-tool whitelisting/blacklisting (replaces switch-shell.sh)
+│   ├── tool-control.sh              Per-tool whitelisting/blacklisting + shell-level switching
 │   ├── tool-control-core.py        Config generator core (python3, called by tool-control.sh)
 │   ├── setup.sh / setup.ps1        One-command setup
 │   ├── kill.sh / kill.ps1          Three-level kill switch
-│   ├── switch-shell.sh             DEPRECATED — use tool-control.sh instead
 │   └── verify.sh                   24-point security verification
 ├── monitoring/                     [Stubs] Skill scanner, log parser
 ├── tests/                          Isolation verification tests
@@ -172,7 +171,7 @@ openclaw-vault/
 | `tools-status` | `make tools-status` | safe | Show per-tool enabled/disabled status |
 | `hard-shell` | `make hard-shell` | caution | Switch to Hard Shell preset |
 | `split-shell` | `make split-shell` | caution | Switch to Split Shell preset |
-| `soft-shell` | `make soft-shell` | caution | Switch to Soft Shell preset (the safari) |
+| `soft-shell` | `make soft-shell` | caution | Switch to Soft Shell preset |
 | `network-report` | `make network-report` | safe | Analyze proxy logs for anomalies |
 | `session-report` | `make session-report` | safe | Post-session activity summary |
 | `log-rotate` | `make log-rotate` | safe | Rotate proxy logs, check transcript size |
@@ -203,8 +202,8 @@ openclaw-vault/
 5. **Exec controls** — security: allowlist, ask: always, safeBins whitelist (Split Shell)
 6. **Hardening config** — DM pairing, no persistence, telemetry disabled
 
-### 24-Point Verification (verify.sh)
-- **Checks 1-14:** Universal exoskeleton — proxy DNS, TCP, read-only root, caps dropped, no host mounts, no interop, API key isolation, no Docker socket, no sudo, non-root, seccomp, noexec, no-new-privileges, PID limit
+### 24-point verification (verify.sh)
+- **Checks 1-14:** Universal container hardening — proxy DNS, TCP, read-only root, caps dropped, no host mounts, no interop, API-key isolation, no Docker socket, no sudo, non-root, seccomp, noexec, no-new-privileges, PID limit
 - **Checks 15-18:** Shell-specific config — adapts to detected shell level (Hard: profile=minimal, exec=deny; Split: profile=coding, exec=allowlist+always; Soft: profile=coding, exec=allowlist+on-miss; safeBins match profiles)
 - **Checks 19-24:** Per-tool security — NEVER-enable tools denied, rm not in safeBins, no interpreters in safeBins, proxy allowlist verified, risk score within expected range, config integrity hash (tamper detection)
 
@@ -250,4 +249,4 @@ openclaw-vault/
 - Do not give the agent any destructive capabilities — the agent is constructive only (read, write, create, search); all destructive operations are handled by the user or Claude from the host side
 
 ---
-*Last updated: 2026-03-31 — Soft Shell operational, all three shell levels verified*
+*Last updated: 2026-05-03 — v0.3.0 release; all three shell levels verified.*
