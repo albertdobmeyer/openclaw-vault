@@ -24,7 +24,7 @@ Built a complete zero-trust security harness for the OpenClaw AI agent with thre
 - **Config integrity protection:** Entrypoint chmod 444 + SHA-256 hash tamper detection
 - **Hardened container image:** rm/rmdir/chown/chgrp stripped, no interpreters, no curl/wget
 - **13 test scripts (81 total assertions):** Tool control (47), attack surfaces (21), plus 13 individual test scripts
-- **Air-gap architecture:** Agent is constructive only. All destructive ops are user-side (Claude as prison guard).
+- **Air-gap architecture:** Agent is constructive only. All destructive operations are performed user-side; the agent has no destructive tools in its catalog.
 
 ### Architecture Decisions to Know
 - Agent config locked read-only by entrypoint (OpenClaw's atomic write bypasses chmod 444, but integrity hash detects tampering)
