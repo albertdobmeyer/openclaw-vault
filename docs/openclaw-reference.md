@@ -306,7 +306,7 @@ In Split Shell mode, the persistent volume preserves:
 | Exec host | `gateway` | Commands run inside the container |
 | safeBins | 26 commands | All Split Shell safeBins + grep, sed, awk, diff, xargs, basename, dirname, env, test, printf |
 | Enabled tools | 17 | All Split Shell tools + web_search, web_fetch, cron, process, canvas, message |
-| Deny list | gateway, bash, browser, group:sessions, nodes | The moat — agent self-modification, sub-agents, and device access permanently blocked |
+| Deny list | gateway, bash, browser, group:sessions, nodes | Protected resources — agent self-modification, sub-agents, and device access permanently blocked |
 | Storage | Volume (persistent) | Memory and identity survive restarts |
 | Domains | 4 (base + raw.githubusercontent.com) | Read public GitHub repos |
 

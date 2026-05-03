@@ -138,4 +138,4 @@ These were established during vault development and apply to all modules:
 
 ---
 
-*The vault is the moat. The forge is the gatekeeper. The pioneer is the scout. Together they form the trifecta.*
+*The vault provides runtime containment, the forge provides supply-chain defense, and the pioneer (parked) was designed to provide social-content analysis. Together they form the three modules of the perimeter.*

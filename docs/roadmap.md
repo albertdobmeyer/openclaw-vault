@@ -226,7 +226,7 @@ The trial run probes should be an automated test script (`tests/test-attack-surf
 
 ## Phase 7: Soft Shell — The Safari
 
-**Why:** The agent becomes genuinely useful — not just a chatbot, but an autonomous assistant. Web search, scheduling, file processing, content automation, all within an absolute moat.
+**Why:** The agent becomes genuinely useful — not just a chatbot, but an autonomous assistant. Web search, scheduling, file processing, content automation, all within the fixed protected-resource boundary.
 
 **Spec:** `docs/specs/2026-03-31-soft-shell-design.md`
 

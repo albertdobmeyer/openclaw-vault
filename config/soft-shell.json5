@@ -1,9 +1,9 @@
-// OpenClaw-Vault: Soft Shell Configuration — The Safari
+// OpenClaw-Vault: Soft Shell configuration
 //
-// Broad autonomy with an absolute moat. The agent can search the web,
-// schedule tasks, process files, and act autonomously within its territory.
-// SafeBins commands auto-approve (ask: "on-miss"). Unknown commands still
-// require Telegram approval.
+// Broad autonomy within a fixed protected-resource boundary. The agent can
+// search the web, schedule tasks, process files, and act autonomously
+// within its sandboxed workspace. SafeBins commands auto-approve
+// (ask: "on-miss"). Unknown commands still require Telegram approval.
 //
 // What's different from Split Shell:
 //   - ask: "on-miss" instead of "always" — safeBins auto-execute
@@ -16,7 +16,7 @@
 //     env, true, false, test, printf (28 total, was 16)
 //   - Proxy allowlist: +raw.githubusercontent.com (user-configurable)
 //
-// What stays the same (the moat):
+// What stays the same (the protected-resource boundary):
 //   - gateway DENIED (agent cannot modify itself)
 //   - bash DENIED (distinct from exec, always blocked)
 //   - nodes DENIED (no device access)
@@ -27,7 +27,7 @@
 //   - Interpreters stripped (no python, bash, ruby, perl)
 //   - Config locked read-only (chmod 444 by entrypoint)
 //   - Proxy allowlist still deny-by-default
-//   - Exoskeleton fully enforced (read-only root, caps dropped, seccomp, noexec)
+//   - Container hardening fully enforced (read-only root, caps dropped, seccomp, noexec)
 //
 // NEVER add to safeBins: sh, bash, node, python, ruby, perl (interpreters)
 // NEVER add to safeBins: curl, wget (network tools — stripped from image)
@@ -51,7 +51,7 @@
     },
   },
 
-  // --- Tool restrictions (Soft Shell: broad autonomy, absolute moat) ---
+  // --- Tool restrictions (Soft Shell: broad autonomy within fixed protected-resource boundary) ---
   tools: {
     // "coding" profile includes: exec, read, write, edit, apply_patch, grep,
     // find, ls, process, and groups: fs, runtime, sessions, memory.
@@ -72,7 +72,7 @@
     ],
 
     deny: [
-      // The moat — NEVER enabled:
+      // Protected resources — NEVER enabled:
       "gateway",            // Agent cannot modify its own security
       "bash",               // Distinct from exec in group:runtime — always denied
 

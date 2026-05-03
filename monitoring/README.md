@@ -1,6 +1,6 @@
 # Monitoring — Runtime Observability
 
-This directory contains tools for monitoring the vault at runtime. These answer: **"what is happening inside the moat right now?"**
+This directory contains tools for monitoring the vault at runtime — what the agent is actually doing inside the perimeter, what it has tried to reach on the network, and whether anything looks anomalous.
 
 ## Tools
 
