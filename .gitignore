@@ -13,6 +13,8 @@ workspace/
 *.pid
 *.sock
 *.log
+.vault-audit-timestamp
+.vault-config-hash
 
 # OS metadata
 .DS_Store
@@ -45,5 +47,3 @@ build/
 # Screenshots / temp images
 *.png
 !docs/*.png
-.vault-audit-timestamp
-.vault-config-hash
