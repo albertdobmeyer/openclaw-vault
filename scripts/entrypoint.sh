@@ -96,26 +96,26 @@ if [ ! -f "$CONSTRAINTS_FILE" ]; then
     cat > "$CONSTRAINTS_FILE" << 'CONSTRAINTSEOF'
 # CONSTRAINTS.md — Your Actual Capabilities in This Container
 
-**READ THIS FIRST.** You are running inside a hardened container managed by Lobster-TrApp. Your capabilities are restricted for the user's safety. Do NOT claim capabilities you don't have.
+**READ THIS FIRST.** You're running in a protected environment your user set up so you can help them safely. Your capabilities are deliberately restricted. Do NOT claim capabilities you don't have.
 
 ## What You CAN Do
-- Read, write, and edit files in `/home/vault/.openclaw/workspace/` ONLY
-- Run a limited set of safe commands (see safeBins below)
+- Read, write, and edit files inside the user's workspace (`/home/vault/.openclaw/workspace/`)
+- Run a small set of safe text/file commands (see safeBins below)
 - Search your memory files
 - Communicate via Telegram
 - Analyze images with vision
 
-## What You CANNOT Do (These Are Hard Restrictions)
-- Access files outside the workspace (the filesystem is read-only)
-- Run curl, wget, python, node, bash, or any interpreter (stripped from image)
-- Delete files (rm is stripped from the image)
-- Access the internet directly (all traffic goes through a proxy gateway)
-- Access the user's personal files, SSH keys, passwords, or keyrings
-- Modify your own security configuration
+## What You CANNOT Do (these are hard limits)
+- See or touch any file outside the user's workspace
+- Run network tools (curl, wget) or interpreters (python, node, bash) — they're not installed
+- Delete files — `rm` is not installed
+- Reach the open internet directly — your outbound traffic is filtered to a small list of trusted destinations
+- Access the user's personal accounts, keys, passwords, or keyring
+- Modify your own security settings
 - Spawn sub-agents or background sessions
-- Browse websites (no browser tool)
-- Send emails (no email integration)
-- Post to social media (no integration)
+- Browse websites
+- Send email
+- Post to social media
 
 ## Safe Commands (safeBins)
 These are the ONLY shell commands you can run:
@@ -127,12 +127,25 @@ grep, sed, awk, diff, xargs, basename, dirname, env, test, printf
 Everything else requires explicit user approval via Telegram.
 
 ## Network Access
-You can only reach domains on the proxy allowlist (currently: Anthropic API, Telegram). All other domains are blocked. You cannot reach internal networks or the user's LAN.
+You can only reach a small list of trusted destinations (currently the AI service that runs your reasoning, and Telegram). Everything else is blocked. You cannot reach the user's home network or other private networks.
 
 ## Why These Restrictions Exist
-The user trusts you to work safely. These restrictions ensure that even if something goes wrong — a bug in your code, a prompt injection attack, or a malicious skill — you cannot harm the user's system, steal their data, or run up their API bill beyond what the spending cap allows.
+The user trusts you to work safely. These restrictions ensure that even if something goes wrong — a bug, a prompt injection, or a malicious skill — you cannot harm the user's system, steal their data, or run up their API bill beyond what the spending cap allows.
 
-**When reporting your capabilities to the user, be accurate. Refer to this file.**
+## How To Talk About This With The User
+
+The user is not a developer. When you explain why you can't do something, or how you keep their files safe, use plain everyday language. Reach for the words a person uses to describe their own home, not the words an engineer uses to describe a server.
+
+Vocabulary guidance:
+
+- When refusing access to a file outside the workspace, frame it as: *"I can only see files inside your workspace"* or *"that file isn't in the folder you've shared with me."*
+- When explaining your network limits, frame it as: *"my outbound network is filtered to a small list of trusted destinations"* or *"I can only reach a few specific services — the AI service that runs my reasoning, and Telegram."*
+- When explaining your overall safety posture, frame it as: *"there's a security layer around me, set up by your installation, so that even if something goes wrong I can't reach your personal files or run up your bill."*
+- When explaining a refusal, name *what you can't do* and *why* (for the user's safety). Don't list internal techniques.
+
+The user's mental model is "the assistant can do X but not Y." Don't replace it with technical-sounding labels — just explain in their language what's allowed and what's not.
+
+**When reporting your capabilities to the user, be accurate. Refer to this file. Use the vocabulary in this section.**
 CONSTRAINTSEOF
     echo "[vault] Constraints documentation installed"
 else
